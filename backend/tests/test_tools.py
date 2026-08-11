@@ -5,12 +5,26 @@ from app.models import Relationship
 
 def test_add_person_ok(db_session):
     result = tools.add_person(
-        db_session, name="张伟", gender="男", birth_year=1990, note="长子"
+        db_session, name="张伟", gender="男", birth_date="1990-05-12", note="长子"
     )
     assert result["ok"] is True
     assert result["person"]["gender"] == "male"
-    assert result["person"]["birth_year"] == 1990
+    assert result["person"]["birth_date"] == "1990-05-12"
     assert result["person"]["note"] == "长子"
+
+
+def test_add_person_invalid_date_rejected(db_session):
+    result = tools.add_person(db_session, name="张伟", birth_date="1990年5月")
+    assert result["ok"] is False
+    assert "日期格式" in result["error"]
+
+
+def test_update_person_invalid_date_rejected(db_session):
+    created = tools.add_person(db_session, name="张伟")
+    result = tools.update_person(
+        db_session, person_id=created["person"]["id"], death_date="2020/01/01"
+    )
+    assert result["ok"] is False
 
 
 def test_add_person_duplicate_name_rejected(db_session):

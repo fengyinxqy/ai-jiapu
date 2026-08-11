@@ -13,8 +13,8 @@ class Person(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100), index=True)
     gender: Mapped[str] = mapped_column(String(10), default="unknown")
-    birth_year: Mapped[int | None] = mapped_column(nullable=True)
-    death_year: Mapped[int | None] = mapped_column(nullable=True)
+    birth_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    death_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
     note: Mapped[str] = mapped_column(Text, default="")
     # 预留多用户/多家谱升级字段（v1 不使用）
     owner_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)

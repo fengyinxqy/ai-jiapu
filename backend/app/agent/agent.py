@@ -38,8 +38,14 @@ TOOL_SCHEMAS = [
                         "enum": ["male", "female", "unknown"],
                         "description": "性别：男/女/未知",
                     },
-                    "birth_year": {"type": "integer", "description": "出生年份，未知可省略"},
-                    "death_year": {"type": "integer", "description": "去世年份，未知可省略"},
+                    "birth_date": {
+                        "type": "string",
+                        "description": "出生日期，格式 YYYY-MM-DD（如 1990-05-12），未知可省略",
+                    },
+                    "death_date": {
+                        "type": "string",
+                        "description": "去世日期，格式 YYYY-MM-DD（如 2020-01-01），未知可省略",
+                    },
                     "note": {"type": "string", "description": "备注，如职业、居住地等"},
                 },
                 "required": ["name"],
@@ -57,8 +63,8 @@ TOOL_SCHEMAS = [
                     "person_id": {"type": "integer", "description": "成员 id"},
                     "name": {"type": "string"},
                     "gender": {"type": "string", "enum": ["male", "female", "unknown"]},
-                    "birth_year": {"type": "integer"},
-                    "death_year": {"type": "integer"},
+                    "birth_date": {"type": "string", "description": "格式 YYYY-MM-DD"},
+                    "death_date": {"type": "string", "description": "格式 YYYY-MM-DD"},
                     "note": {"type": "string"},
                 },
                 "required": ["person_id"],
@@ -121,10 +127,10 @@ def _format_tree_summary(db) -> str:
     lines = ["成员："]
     for person in data["persons"]:
         extra = []
-        if person["birth_year"] is not None:
-            extra.append(f"出生 {person['birth_year']}")
-        if person["death_year"] is not None:
-            extra.append(f"去世 {person['death_year']}")
+        if person["birth_date"] is not None:
+            extra.append(f"出生 {person['birth_date']}")
+        if person["death_date"] is not None:
+            extra.append(f"去世 {person['death_date']}")
         suffix = f"（{'，'.join(extra)}）" if extra else ""
         lines.append(
             f"- id={person['id']} {person['name']}"

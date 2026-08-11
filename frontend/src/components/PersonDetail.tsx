@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { Trash2 } from 'lucide-react'
+import { zhCN } from 'date-fns/locale'
+import { CalendarIcon, Trash2, X } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,6 +13,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
 import {
   Dialog,
   DialogContent,
@@ -20,8 +22,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
+import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -46,18 +53,77 @@ const GENDER_OPTIONS: { value: Gender; label: string }[] = [
   { value: 'unknown', label: '未知' },
 ]
 
-function parseYear(value: string): number | null {
-  const trimmed = value.trim()
-  if (!trimmed) return null
-  const year = Number(trimmed)
-  return Number.isInteger(year) && year > 0 && year < 3000 ? year : null
+function parseDateString(value: string): Date | undefined {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!match) return undefined
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+}
+
+function formatDate(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+interface DatePickerFieldProps {
+  id: string
+  value: string | null
+  placeholder: string
+  onChange: (value: string | null) => void
+}
+
+function DatePickerField({ id, value, placeholder, onChange }: DatePickerFieldProps) {
+  const [open, setOpen] = useState(false)
+  const selected = value ? parseDateString(value) : undefined
+
+  return (
+    <div className="flex items-center gap-2">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            id={id}
+            type="button"
+            variant="outline"
+            className="h-8 w-full justify-start font-normal"
+          >
+            <CalendarIcon data-icon="inline-start" />
+            {value ? value : <span className="text-muted-foreground">{placeholder}</span>}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-auto p-1">
+          <Calendar
+            mode="single"
+            selected={selected}
+            onSelect={(date) => {
+              onChange(date ? formatDate(date) : null)
+              setOpen(false)
+            }}
+            locale={zhCN}
+            autoFocus
+          />
+        </PopoverContent>
+      </Popover>
+      {value && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => onChange(null)}
+          aria-label="清除日期"
+        >
+          <X />
+        </Button>
+      )}
+    </div>
+  )
 }
 
 export function PersonDetail({ person, onClose, onSave, onDelete }: PersonDetailProps) {
   const [name, setName] = useState(person.name)
   const [gender, setGender] = useState<Gender>(person.gender)
-  const [birthYear, setBirthYear] = useState(person.birth_year?.toString() ?? '')
-  const [deathYear, setDeathYear] = useState(person.death_year?.toString() ?? '')
+  const [birthDate, setBirthDate] = useState<string | null>(person.birth_date)
+  const [deathDate, setDeathDate] = useState<string | null>(person.death_date)
   const [note, setNote] = useState(person.note ?? '')
 
   function handleSubmit(event: FormEvent) {
@@ -66,8 +132,8 @@ export function PersonDetail({ person, onClose, onSave, onDelete }: PersonDetail
     onSave(person.id, {
       name: name.trim(),
       gender,
-      birth_year: parseYear(birthYear),
-      death_year: parseYear(deathYear),
+      birth_date: birthDate,
+      death_date: deathDate,
       note: note.trim(),
     })
   }
@@ -108,28 +174,25 @@ export function PersonDetail({ person, onClose, onSave, onDelete }: PersonDetail
                 </SelectContent>
               </Select>
             </Field>
-            <div className="grid grid-cols-2 gap-4">
-              <Field>
-                <FieldLabel htmlFor="person-birth">出生年</FieldLabel>
-                <Input
-                  id="person-birth"
-                  value={birthYear}
-                  onChange={(event) => setBirthYear(event.target.value)}
-                  placeholder="如 1990"
-                  inputMode="numeric"
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="person-death">去世年</FieldLabel>
-                <Input
-                  id="person-death"
-                  value={deathYear}
-                  onChange={(event) => setDeathYear(event.target.value)}
-                  placeholder="留空为在世"
-                  inputMode="numeric"
-                />
-              </Field>
-            </div>
+            <Field>
+              <FieldLabel htmlFor="person-birth">出生日期</FieldLabel>
+              <DatePickerField
+                id="person-birth"
+                value={birthDate}
+                placeholder="选择出生日期"
+                onChange={setBirthDate}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="person-death">去世日期</FieldLabel>
+              <DatePickerField
+                id="person-death"
+                value={deathDate}
+                placeholder="选择去世日期"
+                onChange={setDeathDate}
+              />
+              <FieldDescription>留空表示在世。</FieldDescription>
+            </Field>
             <Field>
               <FieldLabel htmlFor="person-note">备注</FieldLabel>
               <Textarea

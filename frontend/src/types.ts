@@ -5,8 +5,8 @@ export interface Person {
   id: number
   name: string
   gender: Gender
-  birth_year: number | null
-  death_year: number | null
+  birth_date: string | null
+  death_date: string | null
   note: string
   created_at: string
 }
@@ -37,5 +37,5 @@ export interface ChatHistoryItem {
 export type UiMessage = ChatHistoryItem
 
 export type PersonUpdate = Partial<
-  Pick<Person, 'name' | 'gender' | 'birth_year' | 'death_year' | 'note'>
+  Pick<Person, 'name' | 'gender' | 'birth_date' | 'death_date' | 'note'>
 >

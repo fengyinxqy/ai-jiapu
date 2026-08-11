@@ -1,4 +1,6 @@
 """家谱数据的读写工具：Agent 与 API 共用。"""
+from datetime import datetime
+
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
@@ -22,13 +24,27 @@ def _norm_gender(value) -> str:
     return GENDER_ALIASES.get(str(value).strip().lower(), "unknown")
 
 
+def _normalize_date(value):
+    """校验 YYYY-MM-DD 格式的日期；空值返回 None。"""
+    if value is None:
+        return None, None
+    text = str(value).strip()
+    if not text:
+        return None, None
+    try:
+        datetime.strptime(text, "%Y-%m-%d")
+    except ValueError:
+        return None, f"日期格式不正确：{text}（应为 YYYY-MM-DD，如 1990-05-12）"
+    return text, None
+
+
 def _person_dict(person: Person) -> dict:
     return {
         "id": person.id,
         "name": person.name,
         "gender": person.gender,
-        "birth_year": person.birth_year,
-        "death_year": person.death_year,
+        "birth_date": person.birth_date,
+        "death_date": person.death_date,
         "note": person.note or "",
         "created_at": person.created_at.isoformat(),
     }
@@ -57,8 +73,8 @@ def add_person(
     db: Session,
     name: str,
     gender="unknown",
-    birth_year=None,
-    death_year=None,
+    birth_date=None,
+    death_date=None,
     note="",
 ) -> dict:
     name = (name or "").strip()
@@ -74,11 +90,17 @@ def add_person(
                 "若否，请让用户提供区分方式（如加地名或辈分）。"
             ),
         }
+    birth_date, birth_error = _normalize_date(birth_date)
+    if birth_error:
+        return {"ok": False, "error": birth_error}
+    death_date, death_error = _normalize_date(death_date)
+    if death_error:
+        return {"ok": False, "error": death_error}
     person = Person(
         name=name,
         gender=_norm_gender(gender),
-        birth_year=birth_year,
-        death_year=death_year,
+        birth_date=birth_date,
+        death_date=death_date,
         note=note or "",
     )
     db.add(person)
@@ -91,8 +113,8 @@ def update_person(
     person_id: int,
     name=None,
     gender=None,
-    birth_year=None,
-    death_year=None,
+    birth_date=None,
+    death_date=None,
     note=None,
 ) -> dict:
     person = db.get(Person, person_id)
@@ -112,10 +134,16 @@ def update_person(
         person.name = new_name
     if gender is not None:
         person.gender = _norm_gender(gender)
-    if birth_year is not None:
-        person.birth_year = int(birth_year)
-    if death_year is not None:
-        person.death_year = int(death_year)
+    if birth_date is not None:
+        birth_date, error = _normalize_date(birth_date)
+        if error:
+            return {"ok": False, "error": error}
+        person.birth_date = birth_date
+    if death_date is not None:
+        death_date, error = _normalize_date(death_date)
+        if error:
+            return {"ok": False, "error": error}
+        person.death_date = death_date
     if note is not None:
         person.note = str(note)
     db.flush()

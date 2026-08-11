@@ -15,8 +15,8 @@ class PersonOut(BaseModel):
     id: int
     name: str
     gender: Gender = "unknown"
-    birth_year: int | None = None
-    death_year: int | None = None
+    birth_date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    death_date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
     note: str = ""
     created_at: datetime
 
@@ -24,8 +24,8 @@ class PersonOut(BaseModel):
 class PersonUpdate(BaseModel):
     name: str | None = None
     gender: Gender | None = None
-    birth_year: int | None = None
-    death_year: int | None = None
+    birth_date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    death_date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
     note: str | None = None
 
 

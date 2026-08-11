@@ -12,10 +12,10 @@ const GENDER_LABEL: Record<Person['gender'], string> = {
 }
 
 function formatYears(person: Person): string {
-  if (person.birth_year == null && person.death_year == null) {
+  if (person.birth_date == null && person.death_date == null) {
     return GENDER_LABEL[person.gender]
   }
-  return `${person.birth_year ?? '?'} — ${person.death_year ?? '至今'}`
+  return `${person.birth_date ?? '?'} — ${person.death_date ?? '至今'}`
 }
 
 function PersonNodeInner({ data, selected }: NodeProps<PersonFlowNode>) {
