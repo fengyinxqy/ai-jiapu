@@ -14,9 +14,16 @@ interface ChatPanelProps {
   busy: boolean
   onSend: (text: string) => void
   disabled?: boolean
+  noFamily?: boolean
 }
 
-export function ChatPanel({ messages, busy, onSend, disabled = false }: ChatPanelProps) {
+export function ChatPanel({
+  messages,
+  busy,
+  onSend,
+  disabled = false,
+  noFamily = false,
+}: ChatPanelProps) {
   const listRef = useRef<HTMLDivElement>(null)
   const [draft, setDraft] = useState('')
 
@@ -35,7 +42,7 @@ export function ChatPanel({ messages, busy, onSend, disabled = false }: ChatPane
 
   return (
     <section className="flex h-full w-[380px] flex-none flex-col bg-card">
-      <header className="flex shrink-0 items-center justify-between px-4 py-3">
+      <header className="flex shrink-0 items-center justify-between px-4 py-2.5">
         <h2 className="font-heading text-sm font-semibold">与家谱助手对话</h2>
         <Badge variant={busy ? 'outline' : 'secondary'} className={busy ? 'animate-pulse' : ''}>
           {busy ? '整理中…' : '在线'}
@@ -48,7 +55,9 @@ export function ChatPanel({ messages, busy, onSend, disabled = false }: ChatPane
       >
         {messages.length === 0 && !busy && (
           <p className="m-auto max-w-[260px] text-center text-sm leading-relaxed text-muted-foreground">
-            {disabled
+            {noFamily
+              ? '还没有家谱，先创建或加入一个吧。'
+              : disabled
               ? '你以只读身份加入这个家谱，仅可查看成员与家谱图。'
               : '试试这样说：「我叫张伟，我父亲叫张建国，母亲叫李秀兰，爷爷叫张守义。」'}
           </p>
@@ -77,13 +86,19 @@ export function ChatPanel({ messages, busy, onSend, disabled = false }: ChatPane
         <Input
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          placeholder={disabled ? '只读成员不可发送消息' : '口述你的家人，例如：我妈妈叫李秀兰…'}
+          placeholder={
+            noFamily
+              ? '先创建或加入家谱'
+              : disabled
+                ? '只读成员不可发送消息'
+                : '口述你的家人，例如：我妈妈叫李秀兰…'
+          }
           maxLength={2000}
-          disabled={busy || disabled}
+          disabled={busy || disabled || noFamily}
           aria-label="消息输入框"
           className="min-w-0 flex-1"
         />
-        <Button type="submit" disabled={busy || disabled || draft.trim() === ''}>
+        <Button type="submit" disabled={busy || disabled || noFamily || draft.trim() === ''}>
           <SendHorizontal data-icon="inline-start" />
           发送
         </Button>

@@ -33,6 +33,7 @@ import { MembersDialog } from './components/MembersDialog'
 import { PersonDetail } from './components/PersonDetail'
 import { SettingsDialog } from './components/SettingsDialog'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,6 +47,14 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Select,
   SelectContent,
@@ -291,15 +300,12 @@ export default function App() {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border bg-secondary/60 px-6 py-3">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-            <TreePine className="size-5" />
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border bg-secondary/60 px-4 py-2">
+        <div className="flex items-center gap-2.5">
+          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+            <TreePine className="size-4.5" />
           </div>
-          <div>
-            <h1 className="font-heading text-xl tracking-wide">AI 家谱</h1>
-            <p className="text-xs text-muted-foreground">你好，{user.username}</p>
-          </div>
+          <h1 className="font-heading text-lg tracking-wide">AI 家谱</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {activeFamily && (
@@ -308,7 +314,7 @@ export default function App() {
                 value={String(activeFamily.id)}
                 onValueChange={(value) => void selectFamily(Number(value))}
               >
-                <SelectTrigger className="w-44">
+                <SelectTrigger className="h-8 w-40">
                   <SelectValue placeholder="选择家谱" />
                 </SelectTrigger>
                 <SelectContent>
@@ -324,7 +330,7 @@ export default function App() {
               <Badge variant={ROLE_BADGE[activeFamily.role]}>
                 {ROLE_LABEL[activeFamily.role]}
               </Badge>
-              <span className="text-xs text-muted-foreground">
+              <span className="hidden text-xs text-muted-foreground sm:inline">
                 {tree.persons.length} 位成员
               </span>
             </>
@@ -365,14 +371,30 @@ export default function App() {
               </AlertDialogContent>
             </AlertDialog>
           )}
-          <Button variant="ghost" size="sm" onClick={() => setShowSettings(true)}>
-            <Settings data-icon="inline-start" />
-            设置
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => void handleLogout()}>
-            <LogOut data-icon="inline-start" />
-            退出
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-1.5 px-1.5">
+                <Avatar size="sm">
+                  <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                    {user.username.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="hidden max-w-24 truncate md:inline">{user.username}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>{user.username}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => setShowSettings(true)}>
+                <Settings />
+                设置
+              </DropdownMenuItem>
+              <DropdownMenuItem variant="destructive" onSelect={() => void handleLogout()}>
+                <LogOut />
+                退出登录
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
@@ -401,6 +423,7 @@ export default function App() {
           busy={busy}
           onSend={handleSend}
           disabled={!canEdit}
+          noFamily={!activeFamily}
         />
       </main>
 
