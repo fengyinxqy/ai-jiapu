@@ -1,0 +1,391 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* 家谱画布与消息气泡使用的自定义变量 */
+  --paper: #f7f0e3;
+  --paper-deep: #efe3cd;
+  --ink: #4a2c17;
+  --ink-soft: #8a7355;
+  --line: #d8c9a8;
+  --cinnabar: #a94438;
+  --cinnabar-dark: #8b3529;
+  --rose: #c0708a;
+  --male: #a94438;
+  --female: #c0708a;
+  --unknown: #9a8f7d;
+  --shadow: 0 2px 10px rgba(120, 90, 40, 0.14);
+
+  /* shadcn 语义令牌：暖色纸感主题 */
+  --background: #f7f0e3;
+  --foreground: #4a2c17;
+  --card: #fffdf7;
+  --card-foreground: #4a2c17;
+  --popover: #fffdf7;
+  --popover-foreground: #4a2c17;
+  --primary: #a94438;
+  --primary-foreground: #fff8ee;
+  --secondary: #efe3cd;
+  --secondary-foreground: #4a2c17;
+  --muted: #f1e6d2;
+  --muted-foreground: #8a7355;
+  --accent: #f4e9d5;
+  --accent-foreground: #4a2c17;
+  --destructive: #b3261e;
+  --border: #d8c9a8;
+  --input: #d8c9a8;
+  --ring: #a94438;
+  --chart-1: #a94438;
+  --chart-2: #c0708a;
+  --chart-3: #b98a3e;
+  --chart-4: #6f8f5f;
+  --chart-5: #4a2c17;
+  --radius: 0.625rem;
+  --sidebar: #efe3cd;
+  --sidebar-foreground: #4a2c17;
+  --sidebar-primary: #a94438;
+  --sidebar-primary-foreground: #fff8ee;
+  --sidebar-accent: #f4e9d5;
+  --sidebar-accent-foreground: #4a2c17;
+  --sidebar-border: #d8c9a8;
+  --sidebar-ring: #a94438;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+/* 人物节点 */
+.person-node {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 180px;
+  min-height: 66px;
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.person-node:hover,
+.person-node.is-selected {
+  border-color: var(--cinnabar);
+  box-shadow: 0 4px 14px rgba(169, 68, 56, 0.24);
+}
+
+.person-node__avatar {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+  font-family: 'Songti SC', 'STSong', serif;
+}
+
+.person-node--male .person-node__avatar {
+  background: var(--male);
+}
+
+.person-node--female .person-node__avatar {
+  background: var(--female);
+}
+
+.person-node--unknown .person-node__avatar {
+  background: var(--unknown);
+}
+
+.person-node__name {
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+}
+
+.person-node__years {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+/* 连接线 */
+.react-flow__edge.edge-parent .react-flow__edge-path {
+  stroke: #7a4a2b;
+  stroke-width: 2;
+}
+
+.react-flow__edge.edge-spouse .react-flow__edge-path {
+  stroke: #b07a6b;
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+}
+
+.react-flow__handle {
+  width: 7px;
+  height: 7px;
+  background: #c9b48f;
+  border: 1px solid #9a835c;
+}
+
+.react-flow__controls {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.react-flow__controls button {
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.react-flow__controls button:hover {
+  background: var(--paper-deep);
+}
+
+/* 聊天消息 */
+.chat-msg {
+  display: flex;
+}
+
+.chat-msg--user {
+  justify-content: flex-end;
+}
+
+.chat-msg--assistant {
+  justify-content: flex-start;
+}
+
+.chat-msg__bubble {
+  max-width: 86%;
+  padding: 10px 13px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.65;
+  word-break: break-word;
+}
+
+.chat-msg--user .chat-msg__bubble {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-bottom-right-radius: 4px;
+}
+
+.chat-msg--assistant .chat-msg__bubble {
+  background: #fbf5e8;
+  border: 1px solid var(--line);
+  border-bottom-left-radius: 4px;
+}
+
+.chat-msg__bubble :where(p, ul, ol, blockquote, pre) {
+  margin: 0 0 8px;
+}
+
+.chat-msg__bubble :where(p, ul, ol, blockquote, pre):last-child {
+  margin-bottom: 0;
+}
+
+.chat-msg__bubble :where(ul, ol) {
+  padding-left: 20px;
+}
+
+.chat-msg__bubble :where(ul) {
+  list-style: disc;
+}
+
+.chat-msg__bubble :where(ol) {
+  list-style: decimal;
+}
+
+.chat-msg__bubble :where(h1, h2, h3, h4) {
+  margin: 10px 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.chat-msg__bubble code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(74, 44, 23, 0.08);
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 12.5px;
+}
+
+.chat-msg__bubble pre {
+  overflow-x: auto;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(74, 44, 23, 0.07);
+}
+
+.chat-msg__bubble pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.chat-msg__bubble blockquote {
+  padding-left: 10px;
+  border-left: 3px solid var(--line);
+  color: var(--ink-soft);
+}
+
+.chat-msg__bubble a {
+  color: var(--cinnabar);
+}
+
+.chat-msg__bubble hr {
+  margin: 8px 0;
+  border: none;
+  border-top: 1px solid var(--line);
+}
+
+.chat-msg--user .chat-msg__bubble a {
+  color: #ffd9cc;
+}
+
+.chat-msg__bubble--typing {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  min-width: 48px;
+  justify-content: center;
+}
+
+.chat-msg__bubble--typing span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-soft);
+  animation: typing 1.2s infinite ease-in-out;
+}
+
+.chat-msg__bubble--typing span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.chat-msg__bubble--typing span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@theme inline {
+  --font-heading: 'Songti SC', 'STSong', 'SimSun', serif;
+  --font-sans:
+    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC',
+    sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
