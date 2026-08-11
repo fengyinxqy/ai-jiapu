@@ -77,7 +77,7 @@ def test_agent_adds_person_and_replies(monkeypatch, db_session):
     ]
     client = _install_fake(monkeypatch, responses)
 
-    reply = run_agent(db_session, "我叫张伟")
+    reply = run_agent(db_session, 1, 1, "我叫张伟")
 
     assert reply == "已为你添加张伟，还有其他家人要补充吗？"
     assert db_session.query(Person).count() == 1
@@ -101,7 +101,7 @@ def test_agent_hands_tool_error_back_to_model(monkeypatch, db_session):
     ]
     client = _install_fake(monkeypatch, responses)
 
-    reply = run_agent(db_session, "我叫张伟")
+    reply = run_agent(db_session, 1, 1, "我叫张伟")
 
     assert "已有" in reply or "同一个" in reply
     assert db_session.query(Person).count() == 1
@@ -116,4 +116,34 @@ def test_agent_hands_tool_error_back_to_model(monkeypatch, db_session):
 def test_agent_requires_api_key(monkeypatch, db_session):
     monkeypatch.setattr(agent_module, "DEEPSEEK_API_KEY", "")
     with pytest.raises(AgentError):
-        run_agent(db_session, "你好")
+        run_agent(db_session, 1, 1, "你好")
+
+
+def test_agent_data_is_family_scoped(monkeypatch, db_session):
+    from app.agent import tools
+
+    responses = [
+        FakeResponse(
+            FakeMessage(
+                tool_calls=[
+                    FakeToolCall("call_1", "add_person", json.dumps({"name": "张伟"}))
+                ]
+            )
+        ),
+        FakeResponse(FakeMessage(content="已添加张伟。")),
+        FakeResponse(
+            FakeMessage(
+                tool_calls=[
+                    FakeToolCall("call_2", "add_person", json.dumps({"name": "李四"}))
+                ]
+            )
+        ),
+        FakeResponse(FakeMessage(content="已添加李四。")),
+    ]
+    _install_fake(monkeypatch, responses)
+
+    run_agent(db_session, 1, 1, "我叫张伟")
+    run_agent(db_session, 1, 2, "我叫李四")
+
+    assert [p["name"] for p in tools.get_tree_data(db_session, 1)["persons"]] == ["张伟"]
+    assert [p["name"] for p in tools.get_tree_data(db_session, 2)["persons"]] == ["李四"]

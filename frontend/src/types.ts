@@ -39,3 +39,31 @@ export type UiMessage = ChatHistoryItem
 export type PersonUpdate = Partial<
   Pick<Person, 'name' | 'gender' | 'birth_date' | 'death_date' | 'note'>
 >
+
+export type FamilyRole = 'owner' | 'editor' | 'viewer'
+
+export interface User {
+  id: number
+  username: string
+  created_at: string
+}
+
+export interface AuthResponse {
+  token: string
+  user: User
+}
+
+export interface Family {
+  id: number
+  name: string
+  owner_id: number
+  role: FamilyRole
+  created_at: string
+}
+
+export interface FamilyMember {
+  user_id: number
+  username: string
+  role: FamilyRole
+  created_at: string
+}

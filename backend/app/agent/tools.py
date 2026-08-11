@@ -1,4 +1,4 @@
-"""家谱数据的读写工具：Agent 与 API 共用。"""
+"""家谱数据的读写工具：Agent 与 API 共用。所有操作都限定在指定家谱内。"""
 from datetime import datetime
 
 from sqlalchemy import or_
@@ -59,10 +59,20 @@ def _relationship_dict(rel: Relationship) -> dict:
     }
 
 
-def get_tree_data(db: Session) -> dict:
-    """返回可供 API 序列化与 Agent 上下文使用的家谱快照。"""
-    persons = db.query(Person).order_by(Person.id).all()
-    relationships = db.query(Relationship).order_by(Relationship.id).all()
+def get_tree_data(db: Session, family_id: int) -> dict:
+    """返回指定家谱的快照，供 API 序列化与 Agent 上下文使用。"""
+    persons = (
+        db.query(Person)
+        .filter(Person.family_id == family_id)
+        .order_by(Person.id)
+        .all()
+    )
+    relationships = (
+        db.query(Relationship)
+        .filter(Relationship.family_id == family_id)
+        .order_by(Relationship.id)
+        .all()
+    )
     return {
         "persons": [_person_dict(p) for p in persons],
         "relationships": [_relationship_dict(r) for r in relationships],
@@ -71,16 +81,22 @@ def get_tree_data(db: Session) -> dict:
 
 def add_person(
     db: Session,
+    family_id: int,
     name: str,
     gender="unknown",
     birth_date=None,
     death_date=None,
     note="",
+    owner_id=None,
 ) -> dict:
     name = (name or "").strip()
     if not name:
         return {"ok": False, "error": "姓名不能为空。"}
-    existing = db.query(Person).filter(Person.name == name).first()
+    existing = (
+        db.query(Person)
+        .filter(Person.family_id == family_id, Person.name == name)
+        .first()
+    )
     if existing:
         return {
             "ok": False,
@@ -102,6 +118,8 @@ def add_person(
         birth_date=birth_date,
         death_date=death_date,
         note=note or "",
+        family_id=family_id,
+        owner_id=owner_id,
     )
     db.add(person)
     db.flush()
@@ -110,6 +128,7 @@ def add_person(
 
 def update_person(
     db: Session,
+    family_id: int,
     person_id: int,
     name=None,
     gender=None,
@@ -117,7 +136,11 @@ def update_person(
     death_date=None,
     note=None,
 ) -> dict:
-    person = db.get(Person, person_id)
+    person = (
+        db.query(Person)
+        .filter(Person.id == person_id, Person.family_id == family_id)
+        .first()
+    )
     if person is None:
         return {"ok": False, "error": f"找不到 id={person_id} 的成员，请先创建或向用户确认。"}
     if name is not None:
@@ -126,7 +149,11 @@ def update_person(
             return {"ok": False, "error": "姓名不能为空。"}
         duplicate = (
             db.query(Person)
-            .filter(Person.name == new_name, Person.id != person_id)
+            .filter(
+                Person.family_id == family_id,
+                Person.name == new_name,
+                Person.id != person_id,
+            )
             .first()
         )
         if duplicate:
@@ -150,22 +177,32 @@ def update_person(
     return {"ok": True, "person": _person_dict(person)}
 
 
-def delete_person(db: Session, person_id: int) -> dict:
-    person = db.get(Person, person_id)
+def delete_person(db: Session, family_id: int, person_id: int) -> dict:
+    person = (
+        db.query(Person)
+        .filter(Person.id == person_id, Person.family_id == family_id)
+        .first()
+    )
     if person is None:
         return {"ok": False, "error": f"找不到 id={person_id} 的成员。"}
     db.query(Relationship).filter(
+        Relationship.family_id == family_id,
         or_(
             Relationship.person_a_id == person_id,
             Relationship.person_b_id == person_id,
-        )
+        ),
     ).delete(synchronize_session=False)
     db.delete(person)
     db.flush()
     return {"ok": True, "deleted_id": person_id}
 
 
-def _would_create_cycle(db: Session, parent_id: int, child_id: int) -> bool:
+def _would_create_cycle(
+    db: Session,
+    family_id: int,
+    parent_id: int,
+    child_id: int,
+) -> bool:
     """沿 parent 的祖先链向上找 child，若找到说明会成环。"""
     seen: set[int] = set()
     stack = [parent_id]
@@ -179,6 +216,7 @@ def _would_create_cycle(db: Session, parent_id: int, child_id: int) -> bool:
         rows = (
             db.query(Relationship)
             .filter(
+                Relationship.family_id == family_id,
                 Relationship.type == "parent_child",
                 Relationship.person_b_id == current,
             )
@@ -190,15 +228,30 @@ def _would_create_cycle(db: Session, parent_id: int, child_id: int) -> bool:
 
 def add_relationship(
     db: Session,
+    family_id: int,
     type: str,
     person_a_id: int,
     person_b_id: int,
+    owner_id=None,
 ) -> dict:
-    a = db.get(Person, person_a_id)
-    b = db.get(Person, person_b_id)
+    a = (
+        db.query(Person)
+        .filter(Person.id == person_a_id, Person.family_id == family_id)
+        .first()
+    )
+    b = (
+        db.query(Person)
+        .filter(Person.id == person_b_id, Person.family_id == family_id)
+        .first()
+    )
     if a is None or b is None:
         missing = [
-            pid for pid in (person_a_id, person_b_id) if db.get(Person, pid) is None
+            pid
+            for pid in (person_a_id, person_b_id)
+            if db.query(Person)
+            .filter(Person.id == pid, Person.family_id == family_id)
+            .first()
+            is None
         ]
         return {
             "ok": False,
@@ -210,7 +263,7 @@ def add_relationship(
         pa, pb = sorted((person_a_id, person_b_id))
     elif type == "parent_child":
         pa, pb = person_a_id, person_b_id
-        if _would_create_cycle(db, pa, pb):
+        if _would_create_cycle(db, family_id, pa, pb):
             return {
                 "ok": False,
                 "error": "该亲子关系会造成家谱循环，已拒绝。请确认人物辈分是否正确。",
@@ -223,6 +276,7 @@ def add_relationship(
     exists = (
         db.query(Relationship)
         .filter(
+            Relationship.family_id == family_id,
             Relationship.type == type,
             Relationship.person_a_id == pa,
             Relationship.person_b_id == pb,
@@ -231,7 +285,13 @@ def add_relationship(
     )
     if exists:
         return {"ok": False, "error": f"该关系已存在（id={exists.id}），无需重复添加。"}
-    rel = Relationship(type=type, person_a_id=pa, person_b_id=pb)
+    rel = Relationship(
+        type=type,
+        person_a_id=pa,
+        person_b_id=pb,
+        family_id=family_id,
+        owner_id=owner_id,
+    )
     db.add(rel)
     db.flush()
     return {"ok": True, "relationship": _relationship_dict(rel)}

@@ -39,6 +39,7 @@ interface PersonDetailProps {
   onClose: () => void
   onSave: (id: number, patch: PersonUpdate) => void
   onDelete: (id: number) => void
+  readOnly?: boolean
 }
 
 const GENDER_OPTIONS: { value: Gender; label: string }[] = [
@@ -47,7 +48,17 @@ const GENDER_OPTIONS: { value: Gender; label: string }[] = [
   { value: 'unknown', label: '未知' },
 ]
 
-export function PersonDetail({ person, onClose, onSave, onDelete }: PersonDetailProps) {
+function genderLabel(gender: Gender): string {
+  return GENDER_OPTIONS.find((option) => option.value === gender)?.label ?? '未知'
+}
+
+export function PersonDetail({
+  person,
+  onClose,
+  onSave,
+  onDelete,
+  readOnly = false,
+}: PersonDetailProps) {
   const [name, setName] = useState(person.name)
   const [gender, setGender] = useState<Gender>(person.gender)
   const [birthDate, setBirthDate] = useState<string | null>(person.birth_date)
@@ -64,6 +75,37 @@ export function PersonDetail({ person, onClose, onSave, onDelete }: PersonDetail
       death_date: deathDate,
       note: note.trim(),
     })
+  }
+
+  if (readOnly) {
+    return (
+      <Dialog open onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{person.name}</DialogTitle>
+            <DialogDescription>你以只读身份查看成员资料。</DialogDescription>
+          </DialogHeader>
+          <dl className="flex flex-col gap-3 text-sm">
+            <div className="flex gap-2">
+              <dt className="w-20 shrink-0 text-muted-foreground">性别</dt>
+              <dd>{genderLabel(person.gender)}</dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="w-20 shrink-0 text-muted-foreground">出生日期</dt>
+              <dd>{person.birth_date ?? '未知'}</dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="w-20 shrink-0 text-muted-foreground">去世日期</dt>
+              <dd>{person.death_date ?? '在世'}</dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="w-20 shrink-0 text-muted-foreground">备注</dt>
+              <dd className="whitespace-pre-wrap">{person.note || '无'}</dd>
+            </div>
+          </dl>
+        </DialogContent>
+      </Dialog>
+    )
   }
 
   return (

@@ -115,14 +115,20 @@ def _build_client() -> OpenAI:
     return OpenAI(api_key=DEEPSEEK_API_KEY, base_url=DEEPSEEK_BASE_URL)
 
 
-def _load_history(db, limit: int) -> list[dict]:
-    rows = db.query(ChatMessage).order_by(ChatMessage.id.desc()).limit(limit).all()
+def _load_history(db, family_id: int, limit: int) -> list[dict]:
+    rows = (
+        db.query(ChatMessage)
+        .filter(ChatMessage.family_id == family_id)
+        .order_by(ChatMessage.id.desc())
+        .limit(limit)
+        .all()
+    )
     rows.reverse()
     return [{"role": m.role, "content": m.content} for m in rows]
 
 
-def _format_tree_summary(db) -> str:
-    data = tools.get_tree_data(db)
+def _format_tree_summary(db, family_id: int) -> str:
+    data = tools.get_tree_data(db, family_id)
     gender_text = {"male": "男", "female": "女", "unknown": "未知"}
     lines = ["成员："]
     for person in data["persons"]:
@@ -156,16 +162,16 @@ def _safe_args(raw: str) -> dict:
         return {}
 
 
-def _run_tool(db, name: str, args: dict) -> dict:
+def _run_tool(db, family_id: int, user_id: int, name: str, args: dict) -> dict:
     try:
         if name == "add_person":
-            return tools.add_person(db, **args)
+            return tools.add_person(db, family_id, owner_id=user_id, **args)
         if name == "update_person":
-            return tools.update_person(db, **args)
+            return tools.update_person(db, family_id, **args)
         if name == "delete_person":
-            return tools.delete_person(db, **args)
+            return tools.delete_person(db, family_id, **args)
         if name == "add_relationship":
-            return tools.add_relationship(db, **args)
+            return tools.add_relationship(db, family_id, owner_id=user_id, **args)
         return {"ok": False, "error": f"未知工具：{name}"}
     except TypeError as exc:
         return {"ok": False, "error": f"工具参数有误：{exc}"}
@@ -206,7 +212,7 @@ def _chat_with_retry(client, *, messages, tools_schema, model=DEEPSEEK_MODEL):
         raise AgentError(f"调用 DeepSeek 失败：{exc}") from exc
 
 
-def run_agent(db, user_message: str) -> str:
+def run_agent(db, user_id: int, family_id: int, user_message: str) -> str:
     """执行一轮对话：持久化消息、运行工具调用循环，返回最终回复。"""
     if not DEEPSEEK_API_KEY:
         raise AgentError(
@@ -214,12 +220,19 @@ def run_agent(db, user_message: str) -> str:
             "DEEPSEEK_API_KEY（参考 backend/.env.example）。"
         )
 
-    db.add(ChatMessage(role="user", content=user_message))
+    db.add(
+        ChatMessage(
+            role="user",
+            content=user_message,
+            family_id=family_id,
+            owner_id=user_id,
+        )
+    )
     db.commit()
 
-    history = _load_history(db, CHAT_HISTORY_LIMIT)
+    history = _load_history(db, family_id, CHAT_HISTORY_LIMIT)
     system_prompt = prompts.SYSTEM_PROMPT.format(
-        tree_summary=_format_tree_summary(db)
+        tree_summary=_format_tree_summary(db, family_id)
     )
     messages = [{"role": "system", "content": system_prompt}, *history]
 
@@ -252,7 +265,11 @@ def run_agent(db, user_message: str) -> str:
         )
         for call in tool_calls:
             result = _run_tool(
-                db, call.function.name, _safe_args(call.function.arguments)
+                db,
+                family_id,
+                user_id,
+                call.function.name,
+                _safe_args(call.function.arguments),
             )
             db.commit()
             messages.append(
@@ -274,6 +291,13 @@ def run_agent(db, user_message: str) -> str:
     reply = (response.choices[0].message.content or "").strip()
     if not reply:
         reply = "已更新家谱。还有什么需要补充的吗？"
-    db.add(ChatMessage(role="assistant", content=reply))
+    db.add(
+        ChatMessage(
+            role="assistant",
+            content=reply,
+            family_id=family_id,
+            owner_id=user_id,
+        )
+    )
     db.commit()
     return reply

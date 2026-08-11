@@ -58,3 +58,65 @@ class ChatMessageOut(BaseModel):
     id: int
     role: Role
     content: str
+
+
+class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    username: str
+    created_at: datetime
+
+
+class RegisterRequest(BaseModel):
+    username: str = Field(min_length=2, max_length=32)
+    password: str = Field(min_length=6, max_length=64)
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class AuthResponse(BaseModel):
+    token: str
+    user: UserOut
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str = Field(min_length=6, max_length=64)
+
+
+FamilyRole = Literal["owner", "editor", "viewer"]
+
+
+class FamilyOut(BaseModel):
+    id: int
+    name: str
+    owner_id: int
+    role: FamilyRole
+    created_at: datetime
+
+
+class FamilyCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+
+
+class FamilyMemberOut(BaseModel):
+    user_id: int
+    username: str
+    role: FamilyRole
+    created_at: datetime
+
+
+class MemberRoleUpdate(BaseModel):
+    role: Literal["editor", "viewer"]
+
+
+class JoinRequest(BaseModel):
+    code: str = Field(min_length=4, max_length=16)
+
+
+class InviteOut(BaseModel):
+    code: str

@@ -1,0 +1,108 @@
+"""数据库迁移：建表、旧字段升级、旧单机数据归入默认账号。"""
+from sqlalchemy import or_, text
+from sqlalchemy.orm import sessionmaker
+
+from .database import Base
+from .models import ChatMessage, Family, FamilyMember, Person, Relationship, User
+from .security import hash_password
+
+DEFAULT_ADMIN_USERNAME = "admin"
+DEFAULT_ADMIN_PASSWORD = "admin123"
+DEFAULT_FAMILY_NAME = "我的家谱"
+
+
+def run_migrations(engine) -> None:
+    Base.metadata.create_all(bind=engine)
+    _upgrade_person_dates(engine)
+    _ensure_chat_owner_column(engine)
+    _migrate_legacy_data(engine)
+
+
+def _upgrade_person_dates(engine) -> None:
+    """旧库升级：persons 表把 birth_year/death_year 换成 birth_date/death_date。"""
+    with engine.begin() as conn:
+        columns = [
+            row[1]
+            for row in conn.execute(text("PRAGMA table_info(persons)")).fetchall()
+        ]
+        for column in ("birth_date", "death_date"):
+            if column not in columns:
+                conn.execute(text(f"ALTER TABLE persons ADD COLUMN {column} VARCHAR(10)"))
+        for old_column in ("birth_year", "death_year"):
+            if old_column in columns:
+                has_data = conn.execute(
+                    text(f"SELECT COUNT(*) FROM persons WHERE {old_column} IS NOT NULL")
+                ).scalar()
+                if not has_data:
+                    try:
+                        conn.execute(text(f"ALTER TABLE persons DROP COLUMN {old_column}"))
+                    except Exception:  # noqa: BLE001 - 低版本 SQLite 不支持 DROP COLUMN 时忽略
+                        pass
+
+
+def _ensure_chat_owner_column(engine) -> None:
+    with engine.begin() as conn:
+        columns = [
+            row[1]
+            for row in conn.execute(text("PRAGMA table_info(chat_messages)")).fetchall()
+        ]
+        if "owner_id" not in columns:
+            conn.execute(
+                text("ALTER TABLE chat_messages ADD COLUMN owner_id VARCHAR(64)")
+            )
+
+
+def _migrate_legacy_data(engine) -> None:
+    """单机旧数据（family_id 为空）归入默认账号 admin 的「我的家谱」。"""
+    session_factory = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+    with session_factory() as db:
+        orphan_count = db.query(Person).filter(Person.family_id.is_(None)).count()
+        if not orphan_count:
+            return
+
+        admin = db.query(User).filter(User.username == DEFAULT_ADMIN_USERNAME).first()
+        if admin is None:
+            admin = User(
+                username=DEFAULT_ADMIN_USERNAME,
+                password_hash=hash_password(DEFAULT_ADMIN_PASSWORD),
+            )
+            db.add(admin)
+            db.flush()
+
+        family = (
+            db.query(Family)
+            .filter(Family.name == DEFAULT_FAMILY_NAME, Family.owner_id == admin.id)
+            .first()
+        )
+        if family is None:
+            family = Family(name=DEFAULT_FAMILY_NAME, owner_id=admin.id)
+            db.add(family)
+            db.flush()
+
+        membership = (
+            db.query(FamilyMember)
+            .filter(FamilyMember.family_id == family.id, FamilyMember.user_id == admin.id)
+            .first()
+        )
+        if membership is None:
+            db.add(FamilyMember(family_id=family.id, user_id=admin.id, role="owner"))
+
+        db.query(Person).filter(Person.family_id.is_(None)).update(
+            {"family_id": family.id, "owner_id": admin.id},
+            synchronize_session=False,
+        )
+        for rel in db.query(Relationship).filter(Relationship.family_id.is_(None)).all():
+            person = (
+                db.query(Person)
+                .filter(
+                    or_(Person.id == rel.person_a_id, Person.id == rel.person_b_id)
+                )
+                .first()
+            )
+            if person is not None:
+                rel.family_id = person.family_id
+        db.query(ChatMessage).filter(ChatMessage.family_id.is_(None)).update(
+            {"family_id": family.id},
+            synchronize_session=False,
+        )
+        db.commit()

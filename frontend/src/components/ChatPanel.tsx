@@ -13,9 +13,10 @@ interface ChatPanelProps {
   messages: UiMessage[]
   busy: boolean
   onSend: (text: string) => void
+  disabled?: boolean
 }
 
-export function ChatPanel({ messages, busy, onSend }: ChatPanelProps) {
+export function ChatPanel({ messages, busy, onSend, disabled = false }: ChatPanelProps) {
   const listRef = useRef<HTMLDivElement>(null)
   const [draft, setDraft] = useState('')
 
@@ -27,7 +28,7 @@ export function ChatPanel({ messages, busy, onSend }: ChatPanelProps) {
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     const text = draft.trim()
-    if (!text || busy) return
+    if (!text || busy || disabled) return
     onSend(text)
     setDraft('')
   }
@@ -47,7 +48,9 @@ export function ChatPanel({ messages, busy, onSend }: ChatPanelProps) {
       >
         {messages.length === 0 && !busy && (
           <p className="m-auto max-w-[260px] text-center text-sm leading-relaxed text-muted-foreground">
-            试试这样说：「我叫张伟，我父亲叫张建国，母亲叫李秀兰，爷爷叫张守义。」
+            {disabled
+              ? '你以只读身份加入这个家谱，仅可查看成员与家谱图。'
+              : '试试这样说：「我叫张伟，我父亲叫张建国，母亲叫李秀兰，爷爷叫张守义。」'}
           </p>
         )}
         {messages.map((message) => (
@@ -74,13 +77,13 @@ export function ChatPanel({ messages, busy, onSend }: ChatPanelProps) {
         <Input
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          placeholder="口述你的家人，例如：我妈妈叫李秀兰…"
+          placeholder={disabled ? '只读成员不可发送消息' : '口述你的家人，例如：我妈妈叫李秀兰…'}
           maxLength={2000}
-          disabled={busy}
+          disabled={busy || disabled}
           aria-label="消息输入框"
           className="min-w-0 flex-1"
         />
-        <Button type="submit" disabled={busy || draft.trim() === ''}>
+        <Button type="submit" disabled={busy || disabled || draft.trim() === ''}>
           <SendHorizontal data-icon="inline-start" />
           发送
         </Button>
