@@ -163,6 +163,19 @@ body,
 }
 
 /* 聊天消息 */
+.ai-jiapu-datepicker-popup .ant-picker-panel-container,
+.ai-jiapu-datepicker-popup .ant-picker-dropdown {
+  border-radius: 10px;
+}
+
+.ai-jiapu-datepicker-popup .ant-picker-cell-in-view.ant-picker-cell-selected .ant-picker-cell-inner {
+  background: var(--primary);
+}
+
+.ai-jiapu-datepicker-popup .ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner::before {
+  border-color: var(--primary);
+}
+
 .chat-msg {
   display: flex;
 }
