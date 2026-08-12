@@ -300,7 +300,11 @@ export function PersonDetail({
           <Form.Item label="去世日期" name="death_date" extra="留空表示在世。">
             <DatePicker style={{ width: '100%' }} placeholder="2025-08-16" allowClear />
           </Form.Item>
-          <Form.Item label="生平" name="biography" extra="可让 AI 助手帮忙整理：在对话里说「整理一下张伟的生平」。">
+          <Form.Item
+            label="生平"
+            name="biography"
+            extra={`可让 AI 助手帮忙整理：在对话里说「整理一下${person.name}的生平」。`}
+          >
             <Input.TextArea rows={5} placeholder="记录这位成员的生平：出生、成长、事业、晚年…" />
           </Form.Item>
           <Form.Item label="备注" name="note">
