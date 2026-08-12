@@ -4,7 +4,10 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from .config import DATA_DIR, DATABASE_URL
 
-DATA_DIR.mkdir(parents=True, exist_ok=True)
+# Vercel 函数目录只读：/tmp SQLite 与 PostgreSQL 都不需要（也无法）创建 data 目录，
+# 仅在本地 SQLite 路径下预创建数据目录。
+if DATABASE_URL.startswith("sqlite") and not DATABASE_URL.startswith("sqlite:////tmp/"):
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 engine = create_engine(
     DATABASE_URL,
