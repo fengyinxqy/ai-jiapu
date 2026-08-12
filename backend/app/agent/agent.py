@@ -115,10 +115,13 @@ def _build_client() -> OpenAI:
     return OpenAI(api_key=DEEPSEEK_API_KEY, base_url=DEEPSEEK_BASE_URL)
 
 
-def _load_history(db, family_id: int, limit: int) -> list[dict]:
+def _load_history(db, user_id: int, family_id: int, limit: int) -> list[dict]:
     rows = (
         db.query(ChatMessage)
-        .filter(ChatMessage.family_id == family_id)
+        .filter(
+            ChatMessage.family_id == family_id,
+            ChatMessage.owner_id == user_id,
+        )
         .order_by(ChatMessage.id.desc())
         .limit(limit)
         .all()
@@ -230,7 +233,7 @@ def run_agent(db, user_id: int, family_id: int, user_message: str) -> str:
     )
     db.commit()
 
-    history = _load_history(db, family_id, CHAT_HISTORY_LIMIT)
+    history = _load_history(db, user_id, family_id, CHAT_HISTORY_LIMIT)
     system_prompt = prompts.SYSTEM_PROMPT.format(
         tree_summary=_format_tree_summary(db, family_id)
     )

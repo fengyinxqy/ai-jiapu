@@ -194,7 +194,10 @@ def chat_history(
     require_member(db, family_id, user)
     rows = (
         db.query(ChatMessage)
-        .filter(ChatMessage.family_id == family_id)
+        .filter(
+            ChatMessage.family_id == family_id,
+            ChatMessage.owner_id == user.id,
+        )
         .order_by(ChatMessage.id.asc())
         .all()
     )

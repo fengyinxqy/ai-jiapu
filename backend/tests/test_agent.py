@@ -147,3 +147,38 @@ def test_agent_data_is_family_scoped(monkeypatch, db_session):
 
     assert [p["name"] for p in tools.get_tree_data(db_session, 1)["persons"]] == ["张伟"]
     assert [p["name"] for p in tools.get_tree_data(db_session, 2)["persons"]] == ["李四"]
+
+
+def test_agent_history_is_per_user(monkeypatch, db_session):
+    responses = [
+        FakeResponse(
+            FakeMessage(
+                tool_calls=[
+                    FakeToolCall("call_1", "add_person", json.dumps({"name": "张伟"}))
+                ]
+            )
+        ),
+        FakeResponse(FakeMessage(content="已添加张伟。")),
+        FakeResponse(
+            FakeMessage(
+                tool_calls=[
+                    FakeToolCall("call_2", "add_person", json.dumps({"name": "李四"}))
+                ]
+            )
+        ),
+        FakeResponse(FakeMessage(content="已添加李四。")),
+    ]
+    client = _install_fake(monkeypatch, responses)
+
+    run_agent(db_session, 1, 1, "我叫张伟")
+    run_agent(db_session, 2, 1, "我叫李四")
+
+    # 第二个用户在同一个家谱里，历史里不应出现第一个用户的消息
+    second_call_messages = client.chat.completions.calls[2]["messages"]
+    user_contents = [
+        m.get("content", "")
+        for m in second_call_messages
+        if m.get("role") == "user"
+    ]
+    assert any("李四" in c for c in user_contents)
+    assert not any("张伟" in c for c in user_contents)

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   LogOut,
   MessageSquareText,
@@ -70,6 +70,7 @@ const ROLE_COLOR: Record<FamilyRole, string> = {
 
 export default function App() {
   const { message } = AntdApp.useApp()
+  const sessionRef = useRef(0)
   const [user, setUser] = useState<User | null>(null)
   const [initializing, setInitializing] = useState(true)
   const [families, setFamilies] = useState<Family[]>([])
@@ -95,6 +96,7 @@ export default function App() {
   }, [chatCollapsed])
 
   const resetToGuest = useCallback(() => {
+    sessionRef.current += 1
     setUser(null)
     setFamilies([])
     setActiveFamilyId(null)
@@ -127,6 +129,7 @@ export default function App() {
 
   const selectFamily = useCallback(
     async (familyId: number) => {
+      sessionRef.current += 1
       setActiveFamilyId(familyId)
       setBusy(false)
       setTree(EMPTY_TREE)
@@ -161,6 +164,7 @@ export default function App() {
   }, [resetToGuest, selectFamily])
 
   async function handleAuth(data: AuthResponse) {
+    sessionRef.current += 1
     setToken(data.token)
     setUser(data.user)
     const list = await refreshFamilies()
@@ -204,11 +208,13 @@ export default function App() {
   const handleSend = useCallback(
     async (text: string) => {
       if (activeFamilyId == null) return
+      const session = sessionRef.current
       const optimistic: UiMessage = { id: -Date.now(), role: 'user', content: text }
       setMessages((prev) => [...prev, optimistic])
       setBusy(true)
       try {
         const result = await sendChat(activeFamilyId, text)
+        if (sessionRef.current !== session) return
         setTree(result.tree)
         setMessages((prev) => [
           ...prev.filter((m) => m.id !== optimistic.id),
@@ -216,6 +222,7 @@ export default function App() {
         ])
         setSelected(null)
       } catch (error) {
+        if (sessionRef.current !== session) return
         setMessages((prev) => [
           ...prev.filter((m) => m.id !== optimistic.id),
           { id: Date.now(), role: 'assistant', content: `⚠️ ${(error as Error).message}` },

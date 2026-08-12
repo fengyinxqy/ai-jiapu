@@ -16,6 +16,7 @@ def run_migrations(engine) -> None:
     _upgrade_person_dates(engine)
     _ensure_chat_owner_column(engine)
     _migrate_legacy_data(engine)
+    _backfill_chat_owner(engine)
 
 
 def _upgrade_person_dates(engine) -> None:
@@ -106,3 +107,15 @@ def _migrate_legacy_data(engine) -> None:
             synchronize_session=False,
         )
         db.commit()
+
+
+def _backfill_chat_owner(engine) -> None:
+    """把缺失 owner_id 的聊天记录归属到家谱创建者（对话改为成员私密后的数据补齐）。"""
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE chat_messages SET owner_id = ("
+                "  SELECT owner_id FROM families WHERE families.id = chat_messages.family_id"
+                ") WHERE owner_id IS NULL AND family_id IS NOT NULL"
+            )
+        )

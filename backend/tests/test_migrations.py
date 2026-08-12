@@ -50,4 +50,5 @@ def test_legacy_data_migrated_to_admin(tmp_path):
         assert person.family_id is not None and int(person.family_id) == family.id
         chat = db.query(ChatMessage).first()
         assert chat.family_id is not None and int(chat.family_id) == family.id
+        assert chat.owner_id is not None and str(chat.owner_id) == str(admin.id)
     engine.dispose()

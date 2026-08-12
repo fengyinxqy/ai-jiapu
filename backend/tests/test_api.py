@@ -85,19 +85,54 @@ def test_reset_tree_clears_only_current_family(client, db_session):
     assert len(tree_b["persons"]) == 1
 
 
-def test_chat_history_scoped(client, db_session):
-    headers, _ = register_and_login(client, "alice")
-    family = client.post("/api/families", json={"name": "张家"}, headers=headers).json()
+def test_chat_history_scoped_and_private(client, db_session):
+    headers_a, user_a = register_and_login(client, "alice")
+    headers_b, user_b = register_and_login(client, "bob")
+    headers_c, _ = register_and_login(client, "carol")
+    family = client.post("/api/families", json={"name": "张家"}, headers=headers_a).json()
+
+    # 让 bob 加入同一家谱
+    code = client.post(
+        f"/api/families/{family['id']}/invites", headers=headers_a
+    ).json()["code"]
+    client.post("/api/families/join", json={"code": code}, headers=headers_b)
+
     from app.models import ChatMessage
 
-    db_session.add(ChatMessage(role="user", content="你好", family_id=family["id"]))
+    db_session.add(
+        ChatMessage(
+            role="user",
+            content="alice 的私密消息",
+            family_id=family["id"],
+            owner_id=str(user_a["id"]),
+        )
+    )
+    db_session.add(
+        ChatMessage(
+            role="user",
+            content="bob 的私密消息",
+            family_id=family["id"],
+            owner_id=str(user_b["id"]),
+        )
+    )
     db_session.commit()
 
-    history = client.get(
-        f"/api/families/{family['id']}/chat/history", headers=headers
+    history_a = client.get(
+        f"/api/families/{family['id']}/chat/history", headers=headers_a
+    ).json()
+    history_b = client.get(
+        f"/api/families/{family['id']}/chat/history", headers=headers_b
+    ).json()
+    assert [m["content"] for m in history_a] == ["alice 的私密消息"]
+    assert [m["content"] for m in history_b] == ["bob 的私密消息"]
+
+    # 非成员（carol）不可见
+    assert (
+        client.get(
+            f"/api/families/{family['id']}/chat/history", headers=headers_c
+        ).status_code
+        == 404
     )
-    assert history.status_code == 200
-    assert history.json()[0]["content"] == "你好"
 
 
 def test_chat_missing_key_returns_friendly_error(client, monkeypatch):
