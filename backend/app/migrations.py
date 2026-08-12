@@ -1,5 +1,5 @@
 """数据库迁移：建表、旧字段升级、旧单机数据归入默认账号。"""
-from sqlalchemy import or_, text
+from sqlalchemy import inspect, or_, text
 from sqlalchemy.orm import sessionmaker
 
 from .database import Base
@@ -9,6 +9,11 @@ from .security import hash_password
 DEFAULT_ADMIN_USERNAME = "admin"
 DEFAULT_ADMIN_PASSWORD = "admin123"
 DEFAULT_FAMILY_NAME = "我的家谱"
+
+
+def _table_columns(engine, table_name: str) -> list[str]:
+    """跨方言获取表字段名（SQLite / PostgreSQL 通用）。"""
+    return [column["name"] for column in inspect(engine).get_columns(table_name)]
 
 
 def run_migrations(engine) -> None:
@@ -23,10 +28,7 @@ def run_migrations(engine) -> None:
 def _upgrade_person_dates(engine) -> None:
     """旧库升级：persons 表把 birth_year/death_year 换成 birth_date/death_date。"""
     with engine.begin() as conn:
-        columns = [
-            row[1]
-            for row in conn.execute(text("PRAGMA table_info(persons)")).fetchall()
-        ]
+        columns = _table_columns(engine, "persons")
         for column in ("birth_date", "death_date"):
             if column not in columns:
                 conn.execute(text(f"ALTER TABLE persons ADD COLUMN {column} VARCHAR(10)"))
@@ -44,10 +46,7 @@ def _upgrade_person_dates(engine) -> None:
 
 def _ensure_chat_owner_column(engine) -> None:
     with engine.begin() as conn:
-        columns = [
-            row[1]
-            for row in conn.execute(text("PRAGMA table_info(chat_messages)")).fetchall()
-        ]
+        columns = _table_columns(engine, "chat_messages")
         if "owner_id" not in columns:
             conn.execute(
                 text("ALTER TABLE chat_messages ADD COLUMN owner_id VARCHAR(64)")
@@ -56,10 +55,7 @@ def _ensure_chat_owner_column(engine) -> None:
 
 def _ensure_person_biography(engine) -> None:
     with engine.begin() as conn:
-        columns = [
-            row[1]
-            for row in conn.execute(text("PRAGMA table_info(persons)")).fetchall()
-        ]
+        columns = _table_columns(engine, "persons")
         if "biography" not in columns:
             conn.execute(
                 text("ALTER TABLE persons ADD COLUMN biography TEXT DEFAULT ''")

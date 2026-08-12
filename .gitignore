@@ -8,3 +8,6 @@ frontend/node_modules/
 frontend/dist/
 *.log
 .playwright-cli/
+
+.vercel
+.env*
