@@ -1,5 +1,7 @@
 # 🌳 AI 家谱（AI Jiapu）
 
+[简体中文](README.md) · [English](README.en.md)
+
 > 用对话就能建家谱。AI 帮你记录家族成员、故事与生平，邀请家人一起协作，把散落的记忆整理成一张可以传承的家谱。
 
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688)
@@ -134,3 +136,7 @@ frontend/   React 19 + TypeScript + antd 前端（components / api / types）+ V
 - 家谱数据保存在本机 `backend/data/jiapu.db`，按账号与家谱隔离；部署到公网即为自托管的多用户服务
 - 对话内容会发送至 DeepSeek API 用于生成回复，请勿输入不必要的敏感信息
 - 密码使用 PBKDF2 加盐哈希，会话 token 仅存哈希
+
+## 📄 License
+
+本项目基于 [MIT License](LICENSE) 开源。
