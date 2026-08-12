@@ -214,19 +214,19 @@ export default function App() {
       setBusy(true)
       try {
         const result = await sendChat(activeFamilyId, text)
-        if (sessionRef.current !== session) return
-        setTree(result.tree)
-        setMessages((prev) => [
-          ...prev.filter((m) => m.id !== optimistic.id),
-          { id: Date.now(), role: 'assistant', content: result.reply },
-        ])
-        setSelected(null)
+      if (sessionRef.current !== session) return
+      setTree(result.tree)
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now(), role: 'assistant', content: result.reply },
+      ])
+      setSelected(null)
       } catch (error) {
-        if (sessionRef.current !== session) return
-        setMessages((prev) => [
-          ...prev.filter((m) => m.id !== optimistic.id),
-          { id: Date.now(), role: 'assistant', content: `⚠️ ${(error as Error).message}` },
-        ])
+      if (sessionRef.current !== session) return
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now(), role: 'assistant', content: `⚠️ ${(error as Error).message}` },
+      ])
       } finally {
         setBusy(false)
       }
