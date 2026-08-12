@@ -18,11 +18,39 @@ def _table_columns(engine, table_name: str) -> list[str]:
 
 def run_migrations(engine) -> None:
     Base.metadata.create_all(bind=engine)
+    _normalize_numeric_id_columns(engine)
     _upgrade_person_dates(engine)
     _ensure_person_biography(engine)
     _ensure_chat_owner_column(engine)
     _migrate_legacy_data(engine)
     _backfill_chat_owner(engine)
+
+
+def _normalize_numeric_id_columns(engine) -> None:
+    """PostgreSQL 兼容：把历史 VARCHAR 的 family_id/owner_id 归一为 INTEGER。"""
+    if engine.dialect.name == "sqlite":
+        return
+    targets = (
+        ("persons", ("owner_id", "family_id")),
+        ("relationships", ("owner_id", "family_id")),
+        ("chat_messages", ("owner_id", "family_id")),
+        ("stories", ("family_id", "owner_id")),
+    )
+    with engine.begin() as conn:
+        for table, columns in targets:
+            existing = {
+                col["name"]: str(col["type"]).lower()
+                for col in inspect(engine).get_columns(table)
+            }
+            for column in columns:
+                col_type = existing.get(column, "")
+                if "char" in col_type or "text" in col_type:
+                    conn.execute(
+                        text(
+                            f"ALTER TABLE {table} ALTER COLUMN {column} "
+                            f"TYPE INTEGER USING {column}::integer"
+                        )
+                    )
 
 
 def _upgrade_person_dates(engine) -> None:
@@ -124,7 +152,8 @@ def _backfill_chat_owner(engine) -> None:
         conn.execute(
             text(
                 "UPDATE chat_messages SET owner_id = ("
-                "  SELECT owner_id FROM families WHERE families.id = chat_messages.family_id"
+                "  SELECT owner_id FROM families"
+                "  WHERE CAST(families.id AS VARCHAR) = CAST(chat_messages.family_id AS VARCHAR)"
                 ") WHERE owner_id IS NULL AND family_id IS NOT NULL"
             )
         )

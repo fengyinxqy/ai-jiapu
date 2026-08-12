@@ -9,9 +9,21 @@ from .config import DATA_DIR, DATABASE_URL
 if DATABASE_URL.startswith("sqlite") and not DATABASE_URL.startswith("sqlite:////tmp/"):
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
+
+def _engine_url(url: str) -> str:
+    """显式指定 PostgreSQL 驱动为 psycopg（v3），避免依赖默认的 psycopg2。"""
+    if url.startswith("postgresql://"):
+        return "postgresql+psycopg://" + url[len("postgresql://"):]
+    if url.startswith("postgres://"):
+        return "postgres+psycopg://" + url[len("postgres://"):]
+    return url
+
+
+ENGINE_URL = _engine_url(DATABASE_URL)
+
 engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
+    ENGINE_URL,
+    connect_args={"check_same_thread": False} if ENGINE_URL.startswith("sqlite") else {},
 )
 
 if DATABASE_URL.startswith("sqlite"):

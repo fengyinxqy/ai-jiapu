@@ -1,7 +1,7 @@
 """SQLite 数据模型。"""
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -18,8 +18,8 @@ class Person(Base):
     biography: Mapped[str] = mapped_column(Text, default="")
     note: Mapped[str] = mapped_column(Text, default="")
     # 预留多用户/多家谱升级字段（v1 不使用）
-    owner_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
-    family_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    owner_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    family_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     relationships_as_a: Mapped[list["Relationship"]] = relationship(
@@ -47,8 +47,8 @@ class Relationship(Base):
     person_b_id: Mapped[int] = mapped_column(
         ForeignKey("persons.id", ondelete="CASCADE")
     )
-    owner_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
-    family_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    owner_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    family_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     person_a: Mapped["Person"] = relationship(
@@ -67,8 +67,8 @@ class ChatMessage(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     role: Mapped[str] = mapped_column(String(20))  # user | assistant
     content: Mapped[str] = mapped_column(Text)
-    owner_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
-    family_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    owner_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    family_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -135,8 +135,8 @@ class Story(Base):
     person_id: Mapped[int] = mapped_column(
         ForeignKey("persons.id", ondelete="CASCADE"), index=True
     )
-    family_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
-    owner_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    family_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    owner_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     title: Mapped[str] = mapped_column(String(100))
     content: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
