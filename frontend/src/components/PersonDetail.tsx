@@ -78,26 +78,27 @@ export function PersonDetail({
     <Modal
       open
       title="成员详情"
-      footer={[
-        <Popconfirm
-          key="delete"
-          title={`删除 ${person.name}？`}
-          description="该成员及其所有关系都会被删除，此操作不可恢复。"
-          okText="删除"
-          cancelText="取消"
-          okButtonProps={{ danger: true }}
-          onConfirm={() => {
-            onDelete(person.id)
-          }}
-        >
-          <Button danger icon={<Trash2 />}>
-            删除
+      footer={
+        <div className="flex items-center justify-end gap-2">
+          <Popconfirm
+            title={`删除 ${person.name}？`}
+            description="该成员及其所有关系都会被删除，此操作不可恢复。"
+            okText="删除"
+            cancelText="取消"
+            okButtonProps={{ danger: true }}
+            onConfirm={() => {
+              onDelete(person.id)
+            }}
+          >
+            <Button danger icon={<Trash2 />}>
+              删除
+            </Button>
+          </Popconfirm>
+          <Button type="primary" htmlType="submit" form="person-form">
+            保存
           </Button>
-        </Popconfirm>,
-        <Button key="save" type="primary" htmlType="submit" form="person-form">
-          保存
-        </Button>,
-      ]}
+        </div>
+      }
       onCancel={onClose}
       width={480}
     >
