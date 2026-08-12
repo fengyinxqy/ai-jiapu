@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .api.auth import router as auth_router
 from .api.families import router as families_router
+from .api.stories import router as stories_router
 from .database import engine
 from .migrations import run_migrations
 
@@ -23,6 +24,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(families_router)
+app.include_router(stories_router)
 
 FRONTEND_DIST = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
 if FRONTEND_DIST.is_dir():

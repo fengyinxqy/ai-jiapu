@@ -7,6 +7,7 @@ export interface Person {
   gender: Gender
   birth_date: string | null
   death_date: string | null
+  biography: string
   note: string
   created_at: string
 }
@@ -37,7 +38,7 @@ export interface ChatHistoryItem {
 export type UiMessage = ChatHistoryItem
 
 export type PersonUpdate = Partial<
-  Pick<Person, 'name' | 'gender' | 'birth_date' | 'death_date' | 'note'>
+  Pick<Person, 'name' | 'gender' | 'birth_date' | 'death_date' | 'biography' | 'note'>
 >
 
 export type FamilyRole = 'owner' | 'editor' | 'viewer'
@@ -65,5 +66,13 @@ export interface FamilyMember {
   user_id: number
   username: string
   role: FamilyRole
+  created_at: string
+}
+
+export interface Story {
+  id: number
+  person_id: number
+  title: string
+  content: string
   created_at: string
 }

@@ -19,6 +19,10 @@ SYSTEM_PROMPT = """你是「AI 家谱助手」，帮助用户用自然对话建�
 - 配偶用 spouse 关系；亲子用 parent_child 关系（person_a_id 为父母，person_b_id 为子女）。
 - 不确定的指代宁可询问，不要猜测。
 
+## 故事与生平记录
+- 当用户讲述某位成员的故事、经历或生平片段时，用 add_story 记录（标题简短，如“年少学艺”“迁居故事”）；不要把这些内容混入 update_person 的备注。
+- 当用户要求整理某位成员的生平时，用 update_person 的 biography 字段写一段连贯的生平概述；不要擅自编造未提供的信息。
+
 ## 当前家谱
 {tree_summary}
 

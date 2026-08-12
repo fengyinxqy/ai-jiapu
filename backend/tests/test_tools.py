@@ -63,6 +63,16 @@ def test_update_person_ok(db_session):
     assert result["person"]["note"] == "长子"
 
 
+def test_update_person_biography(db_session):
+    created = tools.add_person(db_session, 1, name="张伟")
+    person_id = created["person"]["id"]
+    result = tools.update_person(
+        db_session, 1, person_id=person_id, biography="生于江南，少时学艺。"
+    )
+    assert result["ok"] is True
+    assert result["person"]["biography"] == "生于江南，少时学艺。"
+
+
 def test_person_operations_are_family_scoped(db_session):
     created = tools.add_person(db_session, 1, name="张伟")
     person_id = created["person"]["id"]
@@ -117,3 +127,33 @@ def test_get_tree_data_filters_by_family(db_session):
     tools.add_person(db_session, 2, name="李四")
     assert len(tools.get_tree_data(db_session, 1)["persons"]) == 1
     assert len(tools.get_tree_data(db_session, 2)["persons"]) == 1
+
+
+def test_story_crud_and_scoping(db_session):
+    person = tools.add_person(db_session, 1, name="张伟")["person"]
+    other_person = tools.add_person(db_session, 2, name="李四")["person"]
+
+    created = tools.add_story(
+        db_session, 1, person["id"], "年少学艺", "张伟十四岁离家学木工。"
+    )
+    assert created["ok"] is True
+    assert created["story"]["title"] == "年少学艺"
+
+    # 跨家谱访问失败
+    assert tools.get_stories(db_session, 2, person["id"]) == []
+    assert (
+        tools.add_story(db_session, 2, person["id"], "标题", "内容")["ok"] is False
+    )
+
+    # 更新与删除
+    story_id = created["story"]["id"]
+    updated = tools.update_story(db_session, 1, story_id, content="张伟十四岁离家学木工，三年出师。")
+    assert updated["ok"] is True
+    assert "三年出师" in updated["story"]["content"]
+    assert len(tools.get_stories(db_session, 1, person["id"])) == 1
+    assert tools.delete_story(db_session, 1, story_id)["ok"] is True
+    assert tools.get_stories(db_session, 1, person["id"]) == []
+
+    # 空标题/内容校验
+    assert tools.add_story(db_session, 1, person["id"], "  ", "内容")["ok"] is False
+    assert tools.add_story(db_session, 1, person["id"], "标题", " ")["ok"] is False

@@ -15,6 +15,7 @@ class Person(Base):
     gender: Mapped[str] = mapped_column(String(10), default="unknown")
     birth_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
     death_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    biography: Mapped[str] = mapped_column(Text, default="")
     note: Mapped[str] = mapped_column(Text, default="")
     # 预留多用户/多家谱升级字段（v1 不使用）
     owner_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
@@ -124,4 +125,18 @@ class FamilyInvite(Base):
     )
     code: Mapped[str] = mapped_column(String(16), unique=True, index=True)
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Story(Base):
+    __tablename__ = "stories"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    person_id: Mapped[int] = mapped_column(
+        ForeignKey("persons.id", ondelete="CASCADE"), index=True
+    )
+    family_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    owner_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    title: Mapped[str] = mapped_column(String(100))
+    content: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

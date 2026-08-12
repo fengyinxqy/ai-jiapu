@@ -17,6 +17,7 @@ class PersonOut(BaseModel):
     gender: Gender = "unknown"
     birth_date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
     death_date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    biography: str = ""
     note: str = ""
     created_at: datetime
 
@@ -26,6 +27,7 @@ class PersonUpdate(BaseModel):
     gender: Gender | None = None
     birth_date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
     death_date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    biography: str | None = None
     note: str | None = None
 
 
@@ -120,3 +122,23 @@ class JoinRequest(BaseModel):
 
 class InviteOut(BaseModel):
     code: str
+
+
+class StoryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    person_id: int
+    title: str
+    content: str
+    created_at: datetime
+
+
+class StoryCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=100)
+    content: str = Field(min_length=1, max_length=5000)
+
+
+class StoryUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=100)
+    content: str | None = Field(default=None, min_length=1, max_length=5000)

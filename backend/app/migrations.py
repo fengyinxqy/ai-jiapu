@@ -14,6 +14,7 @@ DEFAULT_FAMILY_NAME = "我的家谱"
 def run_migrations(engine) -> None:
     Base.metadata.create_all(bind=engine)
     _upgrade_person_dates(engine)
+    _ensure_person_biography(engine)
     _ensure_chat_owner_column(engine)
     _migrate_legacy_data(engine)
     _backfill_chat_owner(engine)
@@ -50,6 +51,18 @@ def _ensure_chat_owner_column(engine) -> None:
         if "owner_id" not in columns:
             conn.execute(
                 text("ALTER TABLE chat_messages ADD COLUMN owner_id VARCHAR(64)")
+            )
+
+
+def _ensure_person_biography(engine) -> None:
+    with engine.begin() as conn:
+        columns = [
+            row[1]
+            for row in conn.execute(text("PRAGMA table_info(persons)")).fetchall()
+        ]
+        if "biography" not in columns:
+            conn.execute(
+                text("ALTER TABLE persons ADD COLUMN biography TEXT DEFAULT ''")
             )
 
 

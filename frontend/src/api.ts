@@ -7,6 +7,7 @@ import type {
   FamilyRole,
   Person,
   PersonUpdate,
+  Story,
   Tree,
   User,
 } from './types'
@@ -177,4 +178,45 @@ export function deletePerson(familyId: number, id: number): Promise<{ ok: boolea
 
 export function resetTree(familyId: number): Promise<Tree> {
   return request<Tree>(`/families/${familyId}/tree/reset`, { method: 'POST' })
+}
+
+// ---- 成员故事 ----
+
+export function getStories(familyId: number, personId: number): Promise<Story[]> {
+  return request<Story[]>(`/families/${familyId}/persons/${personId}/stories`)
+}
+
+export function createStory(
+  familyId: number,
+  personId: number,
+  title: string,
+  content: string,
+): Promise<Story> {
+  return request<Story>(`/families/${familyId}/persons/${personId}/stories`, {
+    method: 'POST',
+    body: JSON.stringify({ title, content }),
+  })
+}
+
+export function updateStory(
+  familyId: number,
+  personId: number,
+  storyId: number,
+  patch: { title?: string; content?: string },
+): Promise<Story> {
+  return request<Story>(
+    `/families/${familyId}/persons/${personId}/stories/${storyId}`,
+    { method: 'PATCH', body: JSON.stringify(patch) },
+  )
+}
+
+export function deleteStory(
+  familyId: number,
+  personId: number,
+  storyId: number,
+): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>(
+    `/families/${familyId}/persons/${personId}/stories/${storyId}`,
+    { method: 'DELETE' },
+  )
 }

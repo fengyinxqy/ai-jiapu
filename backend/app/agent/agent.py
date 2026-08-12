@@ -108,6 +108,25 @@ TOOL_SCHEMAS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "add_story",
+            "description": (
+                "为某位成员记录一条家族故事。当用户讲述成员的生平片段、趣事、"
+                "经历时使用；标题要简短（如“年少学艺”“迁居故事”）。"
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "person_id": {"type": "integer", "description": "成员 id"},
+                    "title": {"type": "string", "description": "故事标题，简短概括"},
+                    "content": {"type": "string", "description": "故事内容"},
+                },
+                "required": ["person_id", "title", "content"],
+            },
+        },
+    },
 ]
 
 
@@ -175,6 +194,8 @@ def _run_tool(db, family_id: int, user_id: int, name: str, args: dict) -> dict:
             return tools.delete_person(db, family_id, **args)
         if name == "add_relationship":
             return tools.add_relationship(db, family_id, owner_id=user_id, **args)
+        if name == "add_story":
+            return tools.add_story(db, family_id, owner_id=user_id, **args)
         return {"ok": False, "error": f"未知工具：{name}"}
     except TypeError as exc:
         return {"ok": False, "error": f"工具参数有误：{exc}"}

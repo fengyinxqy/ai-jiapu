@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from ..models import Person, Relationship
+from ..models import Person, Relationship, Story
 
 GENDER_ALIASES = {
     "男": "male",
@@ -45,6 +45,7 @@ def _person_dict(person: Person) -> dict:
         "gender": person.gender,
         "birth_date": person.birth_date,
         "death_date": person.death_date,
+        "biography": person.biography or "",
         "note": person.note or "",
         "created_at": person.created_at.isoformat(),
     }
@@ -134,6 +135,7 @@ def update_person(
     gender=None,
     birth_date=None,
     death_date=None,
+    biography=None,
     note=None,
 ) -> dict:
     person = (
@@ -171,6 +173,8 @@ def update_person(
         if error:
             return {"ok": False, "error": error}
         person.death_date = death_date
+    if biography is not None:
+        person.biography = str(biography)
     if note is not None:
         person.note = str(note)
     db.flush()
@@ -295,3 +299,104 @@ def add_relationship(
     db.add(rel)
     db.flush()
     return {"ok": True, "relationship": _relationship_dict(rel)}
+
+
+def _story_dict(story: Story) -> dict:
+    return {
+        "id": story.id,
+        "person_id": story.person_id,
+        "title": story.title,
+        "content": story.content,
+        "created_at": story.created_at.isoformat(),
+    }
+
+
+def get_stories(db: Session, family_id: int, person_id: int) -> list[dict]:
+    person = (
+        db.query(Person)
+        .filter(Person.id == person_id, Person.family_id == family_id)
+        .first()
+    )
+    if person is None:
+        return []
+    rows = (
+        db.query(Story)
+        .filter(Story.person_id == person_id, Story.family_id == family_id)
+        .order_by(Story.id.asc())
+        .all()
+    )
+    return [_story_dict(s) for s in rows]
+
+
+def add_story(
+    db: Session,
+    family_id: int,
+    person_id: int,
+    title: str,
+    content: str,
+    owner_id=None,
+) -> dict:
+    person = (
+        db.query(Person)
+        .filter(Person.id == person_id, Person.family_id == family_id)
+        .first()
+    )
+    if person is None:
+        return {"ok": False, "error": f"找不到 id={person_id} 的成员，请先创建或向用户确认。"}
+    title = (title or "").strip()
+    content = (content or "").strip()
+    if not title:
+        return {"ok": False, "error": "故事标题不能为空。"}
+    if not content:
+        return {"ok": False, "error": "故事内容不能为空。"}
+    story = Story(
+        person_id=person_id,
+        family_id=family_id,
+        owner_id=owner_id,
+        title=title[:100],
+        content=content,
+    )
+    db.add(story)
+    db.flush()
+    return {"ok": True, "story": _story_dict(story)}
+
+
+def update_story(
+    db: Session,
+    family_id: int,
+    story_id: int,
+    title=None,
+    content=None,
+) -> dict:
+    story = (
+        db.query(Story)
+        .filter(Story.id == story_id, Story.family_id == family_id)
+        .first()
+    )
+    if story is None:
+        return {"ok": False, "error": f"找不到 id={story_id} 的故事。"}
+    if title is not None:
+        title = str(title).strip()
+        if not title:
+            return {"ok": False, "error": "故事标题不能为空。"}
+        story.title = title[:100]
+    if content is not None:
+        content = str(content).strip()
+        if not content:
+            return {"ok": False, "error": "故事内容不能为空。"}
+        story.content = content
+    db.flush()
+    return {"ok": True, "story": _story_dict(story)}
+
+
+def delete_story(db: Session, family_id: int, story_id: int) -> dict:
+    story = (
+        db.query(Story)
+        .filter(Story.id == story_id, Story.family_id == family_id)
+        .first()
+    )
+    if story is None:
+        return {"ok": False, "error": f"找不到 id={story_id} 的故事。"}
+    db.delete(story)
+    db.flush()
+    return {"ok": True, "deleted_id": story_id}

@@ -424,10 +424,11 @@ export default function App() {
         />
       )}
       <SettingsDialog open={showSettings} onOpenChange={setShowSettings} />
-      {selected && (
+      {selected && activeFamilyId != null && (
         <PersonDetail
           key={selected.id}
           person={selected}
+          familyId={activeFamilyId}
           onClose={() => setSelected(null)}
           onSave={handleSave}
           onDelete={handleDelete}

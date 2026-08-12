@@ -182,3 +182,37 @@ def test_agent_history_is_per_user(monkeypatch, db_session):
     ]
     assert any("李四" in c for c in user_contents)
     assert not any("张伟" in c for c in user_contents)
+
+
+def test_agent_adds_story(monkeypatch, db_session):
+    from app.agent import tools
+    from app.models import Story
+
+    person = tools.add_person(db_session, 1, name="张伟")["person"]
+    db_session.commit()
+
+    responses = [
+        FakeResponse(
+            FakeMessage(
+                tool_calls=[
+                    FakeToolCall(
+                        "call_1",
+                        "add_story",
+                        json.dumps(
+                            {"person_id": person["id"], "title": "年少学艺", "content": "十四岁离家学木工。"}
+                        ),
+                    )
+                ]
+            )
+        ),
+        FakeResponse(FakeMessage(content="已为张伟记录故事《年少学艺》。")),
+    ]
+    _install_fake(monkeypatch, responses)
+
+    reply = run_agent(db_session, 1, 1, "我爷爷张伟年轻时学木工")
+
+    assert reply == "已为张伟记录故事《年少学艺》。"
+    story = db_session.query(Story).first()
+    assert story is not None
+    assert story.title == "年少学艺"
+    assert story.person_id == person["id"]
