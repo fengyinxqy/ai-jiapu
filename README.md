@@ -16,9 +16,9 @@
 ## 技术栈
 
 - 后端：FastAPI + SQLAlchemy + SQLite + DeepSeek（`deepseek-chat`，函数调用）
-- 前端：React 19 + Vite + TypeScript + Tailwind CSS + shadcn/ui 组件库 + antd（日期选择器）+ React Flow（dagre 自动布局）
+- 前端：React 19 + Vite + TypeScript + Tailwind CSS + antd 组件库 + React Flow（dagre 自动布局）
 
-UI 采用 shadcn/ui 组件库与暖色纸感主题（宣纸米黄 + 朱砂红），所有颜色/圆角/字体均由 `src/styles.css` 中的语义令牌驱动，方便统一换肤。
+UI 采用 antd 组件库与暖色纸感主题（宣纸米黄 + 朱砂红），主题由 `src/main.tsx` 的 ConfigProvider 统一配置。
 
 ## 目录结构
 

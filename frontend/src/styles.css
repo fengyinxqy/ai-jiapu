@@ -1,6 +1,4 @@
 @import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -63,6 +61,12 @@ body,
 #root {
   height: 100%;
   margin: 0;
+}
+
+/* antd <App> 会在 #root 与页面根 div 之间插入 .ant-app 包装层，
+   需要继承高度，否则 h-full 百分比链条会断 */
+.ant-app {
+  height: 100%;
 }
 
 /* 人物节点 */

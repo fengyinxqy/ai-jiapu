@@ -1,108 +1,85 @@
-import { useState, type FormEvent } from 'react'
-import { toast } from 'sonner'
+import { useState } from 'react'
+import { App as AntdApp, Form, Input, Modal } from 'antd'
 import { changePassword } from '../api'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
 
 interface SettingsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
+interface SettingsFormValues {
+  old_password: string
+  new_password: string
+  confirm: string
+}
+
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
-  const [oldPassword, setOldPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const { message } = AntdApp.useApp()
+  const [form] = Form.useForm<SettingsFormValues>()
   const [busy, setBusy] = useState(false)
 
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault()
-    setError(null)
-    if (newPassword.length < 6) {
-      setError('新密码至少 6 位')
-      return
-    }
-    if (newPassword !== confirm) {
-      setError('两次输入的新密码不一致')
-      return
-    }
+  async function handleFinish(values: SettingsFormValues) {
     setBusy(true)
     try {
-      await changePassword(oldPassword, newPassword)
-      setOldPassword('')
-      setNewPassword('')
-      setConfirm('')
+      await changePassword(values.old_password, values.new_password)
+      form.resetFields()
       onOpenChange(false)
-      toast.success('密码已修改')
-    } catch (err) {
-      setError((err as Error).message)
+      message.success('密码已修改')
+    } catch (error) {
+      message.error(`修改失败：${(error as Error).message}`)
     } finally {
       setBusy(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>设置</DialogTitle>
-          <DialogDescription>修改你的登录密码。</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="old-password">原密码</FieldLabel>
-              <Input
-                id="old-password"
-                type="password"
-                value={oldPassword}
-                onChange={(event) => setOldPassword(event.target.value)}
-                autoComplete="current-password"
-                required
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="new-password">新密码</FieldLabel>
-              <Input
-                id="new-password"
-                type="password"
-                value={newPassword}
-                onChange={(event) => setNewPassword(event.target.value)}
-                placeholder="至少 6 位"
-                autoComplete="new-password"
-                required
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="confirm-password">确认新密码</FieldLabel>
-              <Input
-                id="confirm-password"
-                type="password"
-                value={confirm}
-                onChange={(event) => setConfirm(event.target.value)}
-                autoComplete="new-password"
-                required
-              />
-            </Field>
-          </FieldGroup>
-          {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
-          <DialogFooter className="mt-4">
-            <Button type="submit" disabled={busy}>
-              保存
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <Modal
+      open={open}
+      title="设置"
+      okText="保存"
+      cancelText="取消"
+      confirmLoading={busy}
+      onOk={() => form.submit()}
+      onCancel={() => onOpenChange(false)}
+      destroyOnHidden
+    >
+      <Form form={form} layout="vertical" onFinish={handleFinish} requiredMark={false}>
+        <Form.Item
+          label="原密码"
+          name="old_password"
+          rules={[{ required: true, message: '请输入原密码' }]}
+        >
+          <Input.Password autoComplete="current-password" />
+        </Form.Item>
+        <Form.Item
+          label="新密码"
+          name="new_password"
+          rules={[
+            { required: true, message: '请输入新密码' },
+            { min: 6, message: '新密码至少 6 位' },
+          ]}
+        >
+          <Input.Password placeholder="至少 6 位" autoComplete="new-password" />
+        </Form.Item>
+        <Form.Item
+          label="确认新密码"
+          name="confirm"
+          dependencies={['new_password']}
+          rules={[
+            { required: true, message: '请再次输入新密码' },
+            ({ getFieldValue }) => ({
+              validator(_, value) {
+                if (!value || getFieldValue('new_password') === value) {
+                  return Promise.resolve()
+                }
+                return Promise.reject(new Error('两次输入的新密码不一致'))
+              },
+            }),
+          ]}
+        >
+          <Input.Password autoComplete="new-password" />
+        </Form.Item>
+      </Form>
+    </Modal>
   )
 }

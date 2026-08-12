@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { ConfigProvider } from 'antd'
+import { App as AntdApp, ConfigProvider } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import 'antd/dist/reset.css'
 import dayjs from 'dayjs'
@@ -17,17 +17,30 @@ createRoot(document.getElementById('root')!).render(
       theme={{
         token: {
           colorPrimary: '#a94438',
+          colorInfo: '#a94438',
           colorText: '#4a2c17',
+          colorTextSecondary: '#8a7355',
+          colorTextPlaceholder: '#a2947e',
           colorBgContainer: '#fffdf7',
+          colorBgElevated: '#fffdf7',
           colorBorder: '#d8c9a8',
-          colorTextPlaceholder: '#8a7355',
+          colorBorderSecondary: '#e4d8bd',
           borderRadius: 8,
           fontFamily:
             "'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif",
         },
+        components: {
+          Button: { controlHeight: 32 },
+          Input: { controlHeight: 32 },
+          Select: { controlHeight: 32 },
+          DatePicker: { controlHeight: 32 },
+          Modal: { borderRadiusLG: 12 },
+        },
       }}
     >
-      <App />
+      <AntdApp>
+        <App />
+      </AntdApp>
     </ConfigProvider>
   </StrictMode>,
 )

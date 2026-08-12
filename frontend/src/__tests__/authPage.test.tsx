@@ -37,7 +37,7 @@ describe('AuthPage', () => {
 
   it('注册模式两次密码不一致时报错且不提交', async () => {
     render(<AuthPage onAuth={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: '注册' }))
+    fireEvent.click(screen.getByText('注册'))
 
     fireEvent.change(screen.getByLabelText('用户名'), { target: { value: 'alice' } })
     fireEvent.change(screen.getByLabelText('密码'), { target: { value: 'secret123' } })

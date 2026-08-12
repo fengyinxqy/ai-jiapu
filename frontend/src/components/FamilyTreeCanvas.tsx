@@ -7,14 +7,8 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { TreePine } from 'lucide-react'
+import { Empty } from 'antd'
 import { useMemo } from 'react'
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty'
 import { layoutTree } from '../layout'
 import type { Person, Tree } from '../types'
 import { PersonNode } from './PersonNode'
@@ -48,19 +42,20 @@ export function FamilyTreeCanvas({ tree, onSelect }: FamilyTreeCanvasProps) {
         <Controls showInteractive={false} />
       </ReactFlow>
       {tree.persons.length === 0 && (
-        <Empty className="pointer-events-none absolute inset-0 z-10 bg-background/40">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <TreePine />
-            </EmptyMedia>
-            <EmptyTitle>家谱还是空的</EmptyTitle>
-            <EmptyDescription>
-              在右侧对话框口述你的家人，AI 会帮你建起来，例如：
-              <br />
-              「我叫张伟，我父亲叫张建国，母亲叫李秀兰，爷爷叫张守义。」
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+        <Empty
+          className="pointer-events-none absolute inset-0 z-10 m-auto flex-col items-center justify-center"
+          image={<TreePine className="size-10 text-primary/60" />}
+          description={
+            <>
+              <p className="mb-1 font-medium text-foreground">家谱还是空的</p>
+              <p className="text-sm text-muted-foreground">
+                在右侧对话框口述你的家人，AI 会帮你建起来，例如：
+                <br />
+                「我叫张伟，我父亲叫张建国，母亲叫李秀兰，爷爷叫张守义。」
+              </p>
+            </>
+          }
+        />
       )}
     </div>
   )

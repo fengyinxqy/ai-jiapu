@@ -4,7 +4,7 @@
 
 - `backend/` — FastAPI application. Routers live in `app/api/` (`auth.py`, `families.py`), the DeepSeek tool-calling loop in `app/agent/`, with data models in `app/models.py`, startup migrations in `app/migrations.py`, and password/token helpers in `app/security.py`.
 - `backend/tests/` — pytest suite (auth, family isolation, invites, roles, agent scoping, migrations).
-- `frontend/` — Vite + React + TypeScript app. Components live in `src/components/` (shadcn/ui primitives in `src/components/ui/`), shared utilities in `src/lib/`, and tests in `src/__tests__/`.
+- `frontend/` — Vite + React + TypeScript app. Components live in `src/components/` and are built on the antd component library; tests live in `src/__tests__/`.
 - `backend/data/jiapu.db` — local SQLite database (gitignored).
 
 ## Build, Test, and Development Commands
@@ -18,7 +18,7 @@
 ## Coding Style & Naming Conventions
 
 - Python: PEP 8, type hints, SQLAlchemy 2.0 `Mapped[...]` style; route modules are named after their domain (`auth`, `families`).
-- TypeScript/React: strict mode; components use PascalCase, services/hooks camelCase; use `cn()` for conditional classes and semantic tokens (`bg-primary`, `text-muted-foreground`) instead of raw colors.
+- TypeScript/React: strict mode; components use PascalCase, services/hooks camelCase; UI controls use antd components themed by the ConfigProvider in `src/main.tsx` (warm paper palette); Tailwind utilities are used for layout only.
 - UI copy is Simplified Chinese; all source files are UTF-8.
 
 ## Testing Guidelines

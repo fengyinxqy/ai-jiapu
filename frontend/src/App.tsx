@@ -5,11 +5,10 @@ import {
   RotateCcw,
   Settings,
   TreePine,
-  TriangleAlert,
   UserPlus,
   Users,
 } from 'lucide-react'
-import { toast } from 'sonner'
+import { Alert, App as AntdApp, Avatar, Button, Dropdown, Popconfirm, Select, Tag } from 'antd'
 import {
   clearToken,
   deletePerson,
@@ -32,38 +31,6 @@ import { FamilyTreeCanvas } from './components/FamilyTreeCanvas'
 import { MembersDialog } from './components/MembersDialog'
 import { PersonDetail } from './components/PersonDetail'
 import { SettingsDialog } from './components/SettingsDialog'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Toaster } from '@/components/ui/sonner'
 import type {
   AuthResponse,
   Family,
@@ -83,13 +50,14 @@ const ROLE_LABEL: Record<FamilyRole, string> = {
   viewer: '只读',
 }
 
-const ROLE_BADGE: Record<FamilyRole, 'default' | 'secondary' | 'outline'> = {
-  owner: 'default',
-  editor: 'secondary',
-  viewer: 'outline',
+const ROLE_COLOR: Record<FamilyRole, string> = {
+  owner: '#a94438',
+  editor: '#8a7355',
+  viewer: 'default',
 }
 
 export default function App() {
+  const { message } = AntdApp.useApp()
   const [user, setUser] = useState<User | null>(null)
   const [initializing, setInitializing] = useState(true)
   const [families, setFamilies] = useState<Family[]>([])
@@ -183,13 +151,13 @@ export default function App() {
   async function handleCreated(family: Family) {
     await refreshFamilies()
     await selectFamily(family.id)
-    toast.success('家谱已创建', { description: `「${family.name}」已就绪。` })
+    message.success(`「${family.name}」已创建`)
   }
 
   async function handleJoined(family: Family) {
     await refreshFamilies()
     await selectFamily(family.id)
-    toast.success('已加入家谱', { description: `你已成为「${family.name}」的编辑成员。` })
+    message.success(`你已加入「${family.name}」（编辑成员）`)
   }
 
   async function handleFamilyDeleted() {
@@ -247,12 +215,12 @@ export default function App() {
         await updatePerson(activeFamilyId, id, patch)
         await loadFamilyData(activeFamilyId)
         setSelected(null)
-        toast.success('已保存', { description: '成员信息已更新。' })
+        message.success('成员信息已更新')
       } catch (error) {
-        toast.error('保存失败', { description: (error as Error).message })
+        message.error(`保存失败：${(error as Error).message}`)
       }
     },
-    [activeFamilyId, loadFamilyData],
+    [activeFamilyId, loadFamilyData, message],
   )
 
   const handleDelete = useCallback(
@@ -262,12 +230,12 @@ export default function App() {
         await deletePerson(activeFamilyId, id)
         await loadFamilyData(activeFamilyId)
         setSelected(null)
-        toast.success('已删除', { description: '成员及其关系已从家谱移除。' })
+        message.success('成员及其关系已删除')
       } catch (error) {
-        toast.error('删除失败', { description: (error as Error).message })
+        message.error(`删除失败：${(error as Error).message}`)
       }
     },
-    [activeFamilyId, loadFamilyData],
+    [activeFamilyId, loadFamilyData, message],
   )
 
   async function handleReset() {
@@ -275,9 +243,9 @@ export default function App() {
     try {
       await resetTree(activeFamilyId)
       await loadFamilyData(activeFamilyId)
-      toast.success('已清空', { description: '当前家谱与聊天记录已重置。' })
+      message.success('当前家谱与聊天记录已清空')
     } catch (error) {
-      toast.error('清空失败', { description: (error as Error).message })
+      message.error(`清空失败：${(error as Error).message}`)
     }
   }
 
@@ -290,12 +258,7 @@ export default function App() {
   }
 
   if (!user) {
-    return (
-      <>
-        <AuthPage onAuth={(data) => void handleAuth(data)} />
-        <Toaster richColors position="top-center" />
-      </>
-    )
+    return <AuthPage onAuth={(data) => void handleAuth(data)} />
   }
 
   return (
@@ -311,99 +274,79 @@ export default function App() {
           {activeFamily && (
             <>
               <Select
-                value={String(activeFamily.id)}
-                onValueChange={(value) => void selectFamily(Number(value))}
-              >
-                <SelectTrigger className="h-8 w-40">
-                  <SelectValue placeholder="选择家谱" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {families.map((family) => (
-                      <SelectItem key={family.id} value={String(family.id)}>
-                        {family.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              <Badge variant={ROLE_BADGE[activeFamily.role]}>
+                value={activeFamily.id}
+                onChange={(id) => void selectFamily(id)}
+                options={families.map((family) => ({
+                  label: family.name,
+                  value: family.id,
+                }))}
+                style={{ width: 176 }}
+                popupMatchSelectWidth={false}
+              />
+              <Tag color={ROLE_COLOR[activeFamily.role]} className="m-0">
                 {ROLE_LABEL[activeFamily.role]}
-              </Badge>
+              </Tag>
               <span className="hidden text-xs text-muted-foreground sm:inline">
                 {tree.persons.length} 位成员
               </span>
             </>
           )}
-          <Button variant="ghost" size="sm" onClick={() => setShowCreate(true)}>
-            <Plus data-icon="inline-start" />
+          <Button size="small" type="text" icon={<Plus />} onClick={() => setShowCreate(true)}>
             创建
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => setShowJoin(true)}>
-            <UserPlus data-icon="inline-start" />
+          <Button size="small" type="text" icon={<UserPlus />} onClick={() => setShowJoin(true)}>
             加入
           </Button>
           {activeFamily?.role === 'owner' && (
-            <Button variant="ghost" size="sm" onClick={() => setShowMembers(true)}>
-              <Users data-icon="inline-start" />
+            <Button size="small" type="text" icon={<Users />} onClick={() => setShowMembers(true)}>
               成员
             </Button>
           )}
           {canEdit && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <RotateCcw data-icon="inline-start" />
-                  清空重建
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>清空当前家谱？</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    家谱与聊天记录都会被删除，此操作不可恢复。
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>取消</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => void handleReset()}>清空</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-1.5 px-1.5">
-                <Avatar size="sm">
-                  <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
-                    {user.username.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="hidden max-w-24 truncate md:inline">{user.username}</span>
+            <Popconfirm
+              title="清空当前家谱？"
+              description="家谱与聊天记录都会被删除，此操作不可恢复。"
+              okText="清空"
+              cancelText="取消"
+              okButtonProps={{ danger: true }}
+              onConfirm={() => void handleReset()}
+            >
+              <Button size="small" type="text" icon={<RotateCcw />}>
+                清空重建
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{user.username}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => setShowSettings(true)}>
-                <Settings />
-                设置
-              </DropdownMenuItem>
-              <DropdownMenuItem variant="destructive" onSelect={() => void handleLogout()}>
-                <LogOut />
-                退出登录
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </Popconfirm>
+          )}
+          <Dropdown
+            menu={{
+              items: [
+                { key: 'settings', icon: <Settings />, label: '设置' },
+                { type: 'divider' },
+                { key: 'logout', icon: <LogOut />, label: '退出登录', danger: true },
+              ],
+              onClick: ({ key }) => {
+                if (key === 'settings') setShowSettings(true)
+                if (key === 'logout') void handleLogout()
+              },
+            }}
+          >
+            <Button size="small" type="text" className="gap-1.5 px-1.5">
+              <Avatar size="small" style={{ background: '#a94438' }}>
+                {user.username.charAt(0).toUpperCase()}
+              </Avatar>
+              <span className="hidden max-w-24 truncate md:inline">{user.username}</span>
+            </Button>
+          </Dropdown>
         </div>
       </header>
 
       {loadError && (
-        <Alert variant="destructive" className="mx-6 mt-4 max-w-xl">
-          <TriangleAlert />
-          <AlertTitle>加载失败</AlertTitle>
-          <AlertDescription>{loadError}</AlertDescription>
-        </Alert>
+        <Alert
+          type="error"
+          showIcon
+          className="mx-6 mt-4 max-w-xl"
+          message="加载失败"
+          description={loadError}
+        />
       )}
 
       <main className="flex min-h-0 flex-1">
@@ -456,7 +399,6 @@ export default function App() {
           readOnly={!canEdit}
         />
       )}
-      <Toaster richColors position="top-center" />
     </div>
   )
 }
