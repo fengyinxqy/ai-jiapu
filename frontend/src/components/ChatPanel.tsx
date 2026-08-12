@@ -31,6 +31,10 @@ export function ChatPanel({
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
+    send()
+  }
+
+  function send() {
     const text = draft.trim()
     if (!text || busy || disabled || noFamily) return
     onSend(text)
@@ -82,7 +86,7 @@ export function ChatPanel({
       </div>
       <div className="border-t border-border" />
       <form className="flex shrink-0 gap-2 p-3" onSubmit={handleSubmit}>
-        <Input
+        <Input.TextArea
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           placeholder={
@@ -95,7 +99,14 @@ export function ChatPanel({
           maxLength={2000}
           disabled={inputDisabled}
           aria-label="消息输入框"
-          className="min-w-0 flex-1"
+          autoSize={{ minRows: 1, maxRows: 6 }}
+          onPressEnter={(event) => {
+            if (!event.shiftKey) {
+              event.preventDefault()
+              send()
+            }
+          }}
+          className="min-w-0 flex-1 resize-none"
         />
         <Button
           type="primary"
