@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { SendHorizontal } from 'lucide-react'
+import { PanelRightClose, SendHorizontal } from 'lucide-react'
 import { Button, Input, Tag } from 'antd'
 import ReactMarkdown from 'react-markdown'
 import remarkBreaks from 'remark-breaks'
@@ -12,6 +12,7 @@ interface ChatPanelProps {
   onSend: (text: string) => void
   disabled?: boolean
   noFamily?: boolean
+  onToggle?: () => void
 }
 
 export function ChatPanel({
@@ -20,6 +21,7 @@ export function ChatPanel({
   onSend,
   disabled = false,
   noFamily = false,
+  onToggle,
 }: ChatPanelProps) {
   const listRef = useRef<HTMLDivElement>(null)
   const [draft, setDraft] = useState('')
@@ -47,9 +49,18 @@ export function ChatPanel({
     <section className="flex h-full w-[380px] flex-none flex-col bg-card">
       <header className="flex shrink-0 items-center justify-between px-4 py-2.5">
         <h2 className="font-heading text-sm font-semibold">与家谱助手对话</h2>
-        <Tag color={busy ? 'orange' : 'green'} className={`m-0 ${busy ? 'animate-pulse' : ''}`}>
-          {busy ? '整理中…' : '在线'}
-        </Tag>
+        <div className="flex items-center gap-1">
+          <Tag color={busy ? 'orange' : 'green'} className={`m-0 ${busy ? 'animate-pulse' : ''}`}>
+            {busy ? '整理中…' : '在线'}
+          </Tag>
+          <Button
+            type="text"
+            size="small"
+            icon={<PanelRightClose />}
+            onClick={() => onToggle?.()}
+            aria-label="收起对话"
+          />
+        </div>
       </header>
       <div className="border-t border-border" />
       <div

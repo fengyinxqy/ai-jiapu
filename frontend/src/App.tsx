@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   LogOut,
+  MessageSquareText,
   Plus,
   RotateCcw,
   Settings,
@@ -8,7 +9,17 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react'
-import { Alert, App as AntdApp, Avatar, Button, Dropdown, Popconfirm, Select, Tag } from 'antd'
+import {
+  Alert,
+  App as AntdApp,
+  Avatar,
+  Button,
+  Dropdown,
+  FloatButton,
+  Popconfirm,
+  Select,
+  Tag,
+} from 'antd'
 import {
   clearToken,
   deletePerson,
@@ -43,6 +54,7 @@ import type {
 } from './types'
 
 const EMPTY_TREE: Tree = { persons: [], relationships: [] }
+const CHAT_COLLAPSED_KEY = 'ai_jiapu_chat_collapsed'
 
 const ROLE_LABEL: Record<FamilyRole, string> = {
   owner: '创建者',
@@ -71,9 +83,16 @@ export default function App() {
   const [showJoin, setShowJoin] = useState(false)
   const [showMembers, setShowMembers] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [chatCollapsed, setChatCollapsed] = useState(
+    () => localStorage.getItem(CHAT_COLLAPSED_KEY) === '1',
+  )
 
   const activeFamily = families.find((f) => f.id === activeFamilyId) ?? null
   const canEdit = activeFamily?.role === 'owner' || activeFamily?.role === 'editor'
+
+  useEffect(() => {
+    localStorage.setItem(CHAT_COLLAPSED_KEY, chatCollapsed ? '1' : '0')
+  }, [chatCollapsed])
 
   const resetToGuest = useCallback(() => {
     setUser(null)
@@ -361,13 +380,22 @@ export default function App() {
         ) : (
           <FamilyTreeCanvas tree={tree} onSelect={setSelected} />
         )}
-        <ChatPanel
-          messages={messages}
-          busy={busy}
-          onSend={handleSend}
-          disabled={!canEdit}
-          noFamily={!activeFamily}
-        />
+        {chatCollapsed ? (
+          <FloatButton
+            icon={<MessageSquareText />}
+            tooltip="展开对话"
+            onClick={() => setChatCollapsed(false)}
+          />
+        ) : (
+          <ChatPanel
+            messages={messages}
+            busy={busy}
+            onSend={handleSend}
+            disabled={!canEdit}
+            noFamily={!activeFamily}
+            onToggle={() => setChatCollapsed(true)}
+          />
+        )}
       </main>
 
       <CreateFamilyDialog
