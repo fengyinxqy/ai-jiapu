@@ -1,10 +1,18 @@
 """SQLite 数据模型。"""
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
+
+
+def utcnow() -> datetime:
+    """naive UTC 当前时间，替代已弃用的 datetime.utcnow。
+
+    保持无时区信息，与 SQLite / PostgreSQL 的 TIMESTAMP WITHOUT TIME ZONE 列兼容。
+    """
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class Person(Base):
@@ -20,7 +28,7 @@ class Person(Base):
     # 预留多用户/多家谱升级字段（v1 不使用）
     owner_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     family_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     relationships_as_a: Mapped[list["Relationship"]] = relationship(
         foreign_keys="Relationship.person_a_id",
@@ -49,7 +57,7 @@ class Relationship(Base):
     )
     owner_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     family_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     person_a: Mapped["Person"] = relationship(
         foreign_keys=[person_a_id],
@@ -69,7 +77,7 @@ class ChatMessage(Base):
     content: Mapped[str] = mapped_column(Text)
     owner_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     family_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class User(Base):
@@ -78,7 +86,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(String(32), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(160))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class AuthSession(Base):
@@ -87,7 +95,7 @@ class AuthSession(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class Family(Base):
@@ -96,7 +104,7 @@ class Family(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class FamilyMember(Base):
@@ -113,7 +121,7 @@ class FamilyMember(Base):
         ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     role: Mapped[str] = mapped_column(String(20), default="editor")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class FamilyInvite(Base):
@@ -125,7 +133,7 @@ class FamilyInvite(Base):
     )
     code: Mapped[str] = mapped_column(String(16), unique=True, index=True)
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class Story(Base):
@@ -139,4 +147,4 @@ class Story(Base):
     owner_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     title: Mapped[str] = mapped_column(String(100))
     content: Mapped[str] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
