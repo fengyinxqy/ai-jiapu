@@ -47,4 +47,50 @@ describe('AuthPage', () => {
     expect(await screen.findByText('两次输入的密码不一致')).toBeInTheDocument()
     expect(mockRegister).not.toHaveBeenCalled()
   })
+
+  it('注册成功调用 register 并回传结果', async () => {
+    mockRegister.mockResolvedValue(authData)
+    const onAuth = vi.fn()
+    render(<AuthPage onAuth={onAuth} />)
+    fireEvent.click(screen.getByRole('button', { name: /^注\s*册$/ }))
+
+    fireEvent.change(screen.getByLabelText('用户名'), { target: { value: ' alice ' } })
+    fireEvent.change(screen.getByLabelText('密码'), { target: { value: 'secret123' } })
+    fireEvent.change(screen.getByLabelText('确认密码'), { target: { value: 'secret123' } })
+    fireEvent.submit(screen.getByRole('button', { name: '注册并登录' }).closest('form')!)
+
+    await waitFor(() => expect(mockRegister).toHaveBeenCalledWith('alice', 'secret123'))
+    await waitFor(() => expect(onAuth).toHaveBeenCalledWith(authData))
+  })
+
+  it('登录失败展示 API 错误信息', async () => {
+    mockLogin.mockRejectedValue(new Error('用户名或密码错误'))
+    render(<AuthPage onAuth={vi.fn()} />)
+
+    fireEvent.change(screen.getByLabelText('用户名'), { target: { value: 'alice' } })
+    fireEvent.change(screen.getByLabelText('密码'), { target: { value: 'wrong' } })
+    fireEvent.submit(screen.getByLabelText('密码').closest('form')!)
+
+    expect(await screen.findByText('用户名或密码错误')).toBeInTheDocument()
+  })
+
+  it('请求进行中提交按钮进入 loading 状态', async () => {
+    let resolveLogin!: (value: AuthResponse) => void
+    mockLogin.mockImplementation(
+      () => new Promise<AuthResponse>((resolve) => (resolveLogin = resolve)),
+    )
+    const onAuth = vi.fn()
+    render(<AuthPage onAuth={onAuth} />)
+
+    fireEvent.change(screen.getByLabelText('用户名'), { target: { value: 'alice' } })
+    fireEvent.change(screen.getByLabelText('密码'), { target: { value: 'secret123' } })
+    fireEvent.submit(screen.getByLabelText('密码').closest('form')!)
+
+    await waitFor(() =>
+      expect(document.querySelector('button.ant-btn-loading')).not.toBeNull(),
+    )
+
+    resolveLogin(authData)
+    await waitFor(() => expect(onAuth).toHaveBeenCalledWith(authData))
+  })
 })

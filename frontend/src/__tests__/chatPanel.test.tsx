@@ -36,4 +36,34 @@ describe('ChatPanel', () => {
     expect(strong).toHaveTextContent('萧祺彦')
     expect(container.querySelectorAll('.chat-msg__bubble li')).toHaveLength(2)
   })
+
+  it('输入为空时发送按钮禁用', () => {
+    render(<ChatPanel messages={[]} busy={false} onSend={vi.fn()} />)
+    expect(screen.getByRole('button', { name: /^发\s*送$/ })).toBeDisabled()
+  })
+
+  it('busy 时输入框禁用并展示打字动画', () => {
+    const { container } = render(<ChatPanel messages={[]} busy onSend={vi.fn()} />)
+
+    expect(screen.getByLabelText('消息输入框')).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^发\s*送$/ })).toBeDisabled()
+    expect(screen.getByText('整理中…')).toBeInTheDocument()
+    expect(container.querySelector('.chat-msg__bubble--typing')).toBeInTheDocument()
+  })
+
+  it('只读成员（disabled）输入禁用且展示只读提示', () => {
+    render(<ChatPanel messages={[]} busy={false} disabled onSend={vi.fn()} />)
+
+    expect(screen.getByLabelText('消息输入框')).toBeDisabled()
+    expect(screen.getByPlaceholderText('只读成员不可发送消息')).toBeInTheDocument()
+    expect(screen.getByText(/你以只读身份加入这个家谱/)).toBeInTheDocument()
+  })
+
+  it('无家谱时（noFamily）展示引导文案', () => {
+    render(<ChatPanel messages={[]} busy={false} noFamily onSend={vi.fn()} />)
+
+    expect(screen.getByLabelText('消息输入框')).toBeDisabled()
+    expect(screen.getByPlaceholderText('先创建或加入家谱')).toBeInTheDocument()
+    expect(screen.getByText('还没有家谱，先创建或加入一个吧。')).toBeInTheDocument()
+  })
 })
